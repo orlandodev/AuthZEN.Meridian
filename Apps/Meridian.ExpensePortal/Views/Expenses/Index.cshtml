@@ -1,0 +1,66 @@
+@model List<ExpenseDto>
+
+<h1>Expenses</h1>
+
+@if (User.IsInRole("manager") || User.IsInRole("finance"))
+{
+    <p class="hint">You can approve or reject submitted expenses below. These buttons are UX
+       only — the API re-checks every decision independently, including the manager amount limit.</p>
+}
+
+@if (TempData["Error"] is string error)
+{
+    <div class="alert">@error</div>
+}
+
+<div class="card">
+    @if (Model.Count == 0)
+    {
+        <p class="empty-state">No expenses yet — add a draft below.</p>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr><th>Submitted by</th><th>Category</th><th>Department</th><th>Amount</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody>
+            @foreach (var expense in Model)
+            {
+                <tr>
+                    <td>@expense.OwnerUserId</td>
+                    <td>@expense.Category</td>
+                    <td>@expense.Department</td>
+                    <td class="amount">@expense.Amount.ToString("C")</td>
+                    <td><span class="status-pill status-@expense.Status.ToString().ToLowerInvariant()">@expense.Status</span></td>
+                    <td>
+                        @if ((User.IsInRole("manager") || User.IsInRole("finance"))
+                             && expense.Status == ExpenseStatus.Submitted)
+                        {
+                            <div class="decision-actions">
+                                <form method="post" asp-controller="Expenses" asp-action="Approve">
+                                    <input type="hidden" name="id" value="@expense.Id" />
+                                    <button type="submit" class="secondary btn-sm">Approve</button>
+                                </form>
+                                <form method="post" asp-controller="Expenses" asp-action="Reject">
+                                    <input type="hidden" name="id" value="@expense.Id" />
+                                    <button type="submit" class="secondary btn-sm">Reject</button>
+                                </form>
+                            </div>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+</div>
+
+<h3>New expense (draft)</h3>
+<div class="card">
+    <form method="post" asp-controller="Expenses" asp-action="Create">
+        <div class="field"><label>Category</label><input name="Category" /></div>
+        <div class="field"><label>Amount</label><input name="Amount" type="number" step="0.01" /></div>
+        <button type="submit">Add draft</button>
+    </form>
+</div>

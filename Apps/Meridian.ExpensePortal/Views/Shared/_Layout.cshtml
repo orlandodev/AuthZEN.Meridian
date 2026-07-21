@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Meridian Expenses</title>
+    <link rel="icon" type="image/svg+xml" href="~/images/favicon.svg" />
+    <link rel="alternate icon" type="image/x-icon" href="~/images/favicon.ico" />
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+    <header class="site-header">
+        <div class="site-header__inner">
+            <a class="brand" href="/">
+                <img src="~/images/logo-mark-inverse.svg" alt="" width="32" height="32" />
+                <span>Meridian Expenses</span>
+            </a>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <div class="identity">
+                    <span>@User.Identity.Name</span>
+                    <span class="roles">@string.Join(" · ", User.FindAll("role").Select(c => c.Value))</span>
+                    <a href="/Diagnostics/Claims">claims</a>
+                    <form method="post" asp-controller="Account" asp-action="Logout">
+                        <button type="submit" class="link">Sign out</button>
+                    </form>
+                </div>
+            }
+            else
+            {
+                <a class="signin-link" asp-controller="Account" asp-action="Login">Sign in</a>
+            }
+        </div>
+    </header>
+    <main class="page">
+        @RenderBody()
+    </main>
+</body>
+</html>

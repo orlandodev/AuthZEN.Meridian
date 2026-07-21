@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Meridian.Expenses.Api": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:59575;http://localhost:59584"
+    }
+  }
+}

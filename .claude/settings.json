@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build *)",
+      "Bash(DOTNET_ENVIRONMENT=Development timeout 40 dotnet run --no-build)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(tasklist //FI \"IMAGENAME eq Meridian.AppHost.exe\")",
+      "Bash(tasklist //FI \"IMAGENAME eq dcp.exe\")",
+      "Bash(taskkill //F //PID 40208 //T)",
+      "Bash(taskkill //F //PID 38188 //T)",
+      "Bash(dotnet run *)",
+      "Bash(netstat -ano)",
+      "Bash(podman ps *)",
+      "Bash(podman volume *)",
+      "Bash(curl -sk -o /dev/null -w \"%{http_code}\\\\n\" https://localhost:59579/.well-known/openid-configuration)",
+      "Bash(curl -sk -o /dev/null -w \"%{http_code}\\\\n\" https://localhost:59577/)",
+      "Bash(podman logs *)",
+      "Bash(tasklist //FI \"IMAGENAME eq Meridian*\")",
+      "Bash(podman stop *)",
+      "Bash(podman rm *)"
+    ]
+  }
+}

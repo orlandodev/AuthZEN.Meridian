@@ -1,0 +1,259 @@
+/* ===========================================================
+   Meridian Expense Portal — design tokens
+   Palette nods to the app's name: a navigation "meridian" is a
+   precise reference line, so the accent is a brass/instrument
+   gold against deep navy, and currency uses tabular numerals so
+   amounts line up like a ledger.
+   =========================================================== */
+:root {
+  --color-bg: #F5F6F8;
+  --color-surface: #FFFFFF;
+  --color-ink: #1B2430;
+  --color-ink-muted: #5B6472;
+  --color-primary: #1B3A5C;
+  --color-primary-hover: #14293F;
+  --color-accent: #C08A2E;
+  --color-border: #E3E6EA;
+
+  --color-draft: #8A93A3;
+  --color-submitted: #C08A2E;
+  --color-approved: #2E7D5B;
+  --color-rejected: #B3432E;
+  --color-reimbursed: #2E6FA3;
+
+  --font-ui: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+
+  --radius: 6px;
+  --shadow-card: 0 1px 2px rgba(20, 30, 45, 0.06), 0 1px 1px rgba(20, 30, 45, 0.04);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+a { color: var(--color-primary); }
+a:hover { color: var(--color-primary-hover); }
+
+h1, h2, h3 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0 0 12px;
+}
+h1 { font-size: 1.6rem; }
+h3 { font-size: 1.05rem; color: var(--color-ink-muted); text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.8rem; }
+
+/* ---- Header: the one signature element — a thin brass "meridian
+   line" gradient under the navy bar, evoking a reference line on a map. ---- */
+.site-header {
+  background: var(--color-primary);
+  border-bottom: 2px solid transparent;
+  border-image: linear-gradient(90deg, transparent, var(--color-accent) 20%, var(--color-accent) 80%, transparent) 1;
+}
+
+.site-header__inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 14px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-decoration: none;
+  letter-spacing: -0.01em;
+}
+.brand:hover { color: #fff; opacity: 0.9; }
+.brand img { display: block; }
+
+.identity {
+  color: #E7ECF3;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.identity .roles {
+  color: var(--color-accent);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.identity a, .identity button.link {
+  color: #C9D3E0;
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+.identity a:hover, .identity button.link:hover { color: #fff; }
+
+.signin-link {
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* ---- Layout ---- */
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.hint {
+  color: var(--color-ink-muted);
+  font-size: 0.9rem;
+  margin: -4px 0 16px;
+}
+
+.alert {
+  background: #FBEAE6;
+  border: 1px solid #E3B3A8;
+  color: #7A2A1A;
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+
+.empty-state {
+  color: var(--color-ink-muted);
+  font-style: italic;
+}
+
+/* ---- Table ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+thead th {
+  text-align: left;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-ink-muted);
+  border-bottom: 1px solid var(--color-border);
+  padding: 8px 10px;
+}
+tbody td {
+  padding: 10px;
+  border-bottom: 1px solid var(--color-border);
+}
+tbody tr:last-child td { border-bottom: none; }
+
+.amount {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Status pills: color encodes lifecycle state, not decoration ---- */
+.status-pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #fff;
+}
+.status-draft      { background: var(--color-draft); }
+.status-submitted  { background: var(--color-submitted); }
+.status-approved   { background: var(--color-approved); }
+.status-rejected   { background: var(--color-rejected); }
+.status-reimbursed { background: var(--color-reimbursed); }
+
+/* ---- Forms & buttons ---- */
+label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--color-ink-muted);
+  margin-bottom: 4px;
+}
+input[type="text"], input[type="number"], input:not([type]) {
+  width: 100%;
+  max-width: 320px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+}
+input:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+.field { margin-bottom: 14px; }
+
+button, .btn {
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 7px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+  cursor: pointer;
+}
+button:hover { background: var(--color-primary-hover); }
+button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+button.secondary {
+  background: transparent;
+  color: var(--color-primary);
+}
+button.secondary:hover { background: #EEF2F6; }
+
+button.btn-sm {
+  padding: 4px 10px;
+  font-size: 0.8rem;
+}
+
+.decision-actions {
+  display: flex;
+  gap: 6px;
+}
+.decision-actions form { margin: 0; }
+
+button.link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+/* ---- Diagnostics ---- */
+.diagnostics-table td:first-child {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--color-ink-muted);
+}
+
+@media (max-width: 640px) {
+  .site-header__inner, .page { padding-left: 16px; padding-right: 16px; }
+  .identity { flex-wrap: wrap; gap: 8px; }
+}

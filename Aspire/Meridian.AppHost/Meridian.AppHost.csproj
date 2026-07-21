@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<Sdk Name="Aspire.AppHost.Sdk" Version="13.4.6" />
+
+	<PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>cb686976-9ebb-40ef-9a2f-3141a226dfb8</UserSecretsId>
+  </PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Aspire.Hosting.AppHost" />
+		<PackageReference Include="Aspire.Hosting.PostgreSQL" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\Apps\Meridian.ExpensePortal\Meridian.ExpensePortal.csproj" />
+		<ProjectReference Include="..\..\Identity\Meridian.IdentityServer\Meridian.IdentityServer.csproj" />
+		<ProjectReference Include="..\..\Services\Meridian.Expenses.Api\Meridian.Expenses.Api.csproj" />
+		<ProjectReference Include="..\..\Services\Meridian.Receipts.Api\Meridian.Receipts.Api.csproj" />
+		<ProjectReference Include="..\..\Services\Meridian.Reporting.Api\Meridian.Reporting.Api.csproj" />
+		<ProjectReference Include="..\..\Authorization\Meridian.Pdp.Service\Meridian.Pdp.Service.csproj" />
+	</ItemGroup>
+
+</Project>

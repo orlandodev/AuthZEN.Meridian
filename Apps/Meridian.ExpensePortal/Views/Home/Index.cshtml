@@ -1,0 +1,10 @@
+<h1>Meridian Expenses</h1>
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <p>Signed in as <strong>@User.Identity.Name</strong>.</p>
+    <p><a asp-controller="Expenses" asp-action="Index">Go to your expenses →</a></p>
+}
+else
+{
+    <p>Please <a asp-controller="Account" asp-action="Login">sign in</a> to view your expenses.</p>
+}
