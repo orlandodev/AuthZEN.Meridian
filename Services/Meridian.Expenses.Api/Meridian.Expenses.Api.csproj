@@ -4,7 +4,8 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
     <ProjectReference Include="..\..\Aspire\Meridian.ServiceDefaults\Meridian.ServiceDefaults.csproj" />
-    <ProjectReference Include="..\..\Meridian.DataAccess\Meridian.DataAccess.csproj" />
+    <ProjectReference Include="..\..\Common\Meridian.DataAccess\Meridian.DataAccess.csproj" />
+    <ProjectReference Include="..\..\Common\Meridian.Services\Meridian.Services.csproj" />
     <ProjectReference Include="..\..\Meridian.Services\Meridian.Services.csproj" />
     <!-- NOTE: no reference to AuthZen.Pep in Stage 0. That is added in Stage 3
          when this API stops enforcing in-process and delegates to the PDP. -->
