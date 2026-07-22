@@ -24,9 +24,11 @@ This is a **source scaffold**, not a verified build. It was generated offline, s
 
 ```
 Meridian.slnx
+├── Meridian.DataAccess             EF Core: ExpensesDbContext, IExpenseRepository (grouped as "Common" in the .slnx)
+├── Meridian.Services               domain layer: IExpenseService, CallerContext, Roles (grouped as "Common" in the .slnx)
 ├── Aspire/
 │   ├── Meridian.AppHost            orchestration + Postgres containers + OTEL wiring
-│   └── Meridian.ServiceDefaults    shared OTEL, health, resilience, discovery
+│   └── Meridian.ServiceDefaults    shared OTEL, health, resilience, discovery, JWT auth
 ├── Identity/
 │   └── Meridian.IdentityServer     Duende IdP: in-memory clients/scopes + test users
 ├── Apps/
@@ -40,8 +42,12 @@ Meridian.slnx
 │   ├── AuthZen.Contracts           SARC wire model (AuthZEN 1.0)
 │   └── AuthZen.Pep                 PEP client: builds requests, batches, OTEL, DI helper
 └── Tests/
-    └── Meridian.AuthZen.ConformanceTests
+    ├── Meridian.AuthZen.ConformanceTests
+    └── Meridian.UnitTests
 ```
+
+`Meridian.DataAccess` and `Meridian.Services` live at the repo root alongside `Meridian.slnx` — the
+solution groups them under a `Common/` folder for organization, but that folder doesn't exist on disk.
 
 ## Run it
 
