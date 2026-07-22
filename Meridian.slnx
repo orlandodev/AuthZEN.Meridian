@@ -4,8 +4,8 @@
     <Project Path="Aspire/Meridian.ServiceDefaults/Meridian.ServiceDefaults.csproj" />
   </Folder>
   <Folder Name="/Common/">
-    <Project Path="Meridian.DataAccess/Meridian.DataAccess.csproj" Id="536cf76f-b767-4c75-b578-4e47db7ab3da" />
-    <Project Path="Meridian.Services/Meridian.Services.csproj" Id="bd28a2d7-4cbc-408e-a354-08a9ed9ed041" />
+    <Project Path="Common/Meridian.DataAccess/Meridian.DataAccess.csproj" Id="536cf76f-b767-4c75-b578-4e47db7ab3da" />
+    <Project Path="Common/Meridian.Services/Meridian.Services.csproj" Id="bd28a2d7-4cbc-408e-a354-08a9ed9ed041" />
   </Folder>
   <Folder Name="/Identity/">
     <Project Path="Identity/Meridian.IdentityServer/Meridian.IdentityServer.csproj" />
