@@ -7,28 +7,16 @@ API 1.0** — a PDP/PEP split, observed end-to-end with **OpenTelemetry** via **
 The business domain is a corporate **expense reimbursement** system. The domain is
 deliberately ordinary; the interesting part is *where the authorization decision lives*.
 
-## What this scaffold is (and isn't)
-
-This is a **source scaffold**, not a verified build. It was generated offline, so:
-
-- **Confirm package versions** in `Directory.Packages.props` and the
-  `Aspire.AppHost.Sdk` version in `Aspire/Meridian.AppHost/Meridian.AppHost.csproj`
-  before your first `dotnet restore`. .NET 10, .NET Aspire, and Duende IdentityServer
-  version independently; the pins here are plausible starting points.
-- **Add the Duende login UI** — see `Identity/Meridian.IdentityServer/README-LOGIN-UI.md`.
-  Interactive sign-in won't work until you scaffold it (`dotnet new isui`).
-- Requires the **.NET Aspire workload/tooling** and a container runtime (Docker/Podman)
-  for the Postgres containers the AppHost provisions.
-
 ## Layout
 
 ```
 Meridian.slnx
-├── Meridian.DataAccess             EF Core: ExpensesDbContext, IExpenseRepository (grouped as "Common" in the .slnx)
-├── Meridian.Services               domain layer: IExpenseService, CallerContext, Roles (grouped as "Common" in the .slnx)
 ├── Aspire/
 │   ├── Meridian.AppHost            orchestration + Postgres containers + OTEL wiring
 │   └── Meridian.ServiceDefaults    shared OTEL, health, resilience, discovery, JWT auth
+├── Common/
+│   ├── Meridian.DataAccess         EF Core: ExpensesDbContext, IExpenseRepository
+│   └── Meridian.Services           domain layer: IExpenseService, CallerContext, Roles
 ├── Identity/
 │   └── Meridian.IdentityServer     Duende IdP: in-memory clients/scopes + test users
 ├── Apps/
@@ -45,9 +33,6 @@ Meridian.slnx
     ├── Meridian.AuthZen.ConformanceTests
     └── Meridian.UnitTests
 ```
-
-`Meridian.DataAccess` and `Meridian.Services` live at the repo root alongside `Meridian.slnx` — the
-solution groups them under a `Common/` folder for organization, but that folder doesn't exist on disk.
 
 ## Run it
 
@@ -71,7 +56,7 @@ traces, and metrics. The test users (password `Pass123$`) are:
 - **Stage 0 — Traditional (this scaffold).** `Meridian.Expenses.Api` enforces authorization
   in-process: role policies, a resource-based ownership handler (`OwnerOrPrivilegedHandler`),
   and an imperative amount-limit rule (`ApprovalRules`). No PDP involved.
-- **Stage 1 — Feel the pain.** Duplicate the ownership/role logic into `Receipts.Api`;
+- **Stage 1 — Duplicate the ownership/role logic into `Receipts.Api`;
   show drift, N-service redeploys, and no central audit.
 - **Stage 2 — Stand up the PDP.** Replace `StubPolicyEngine` with a real rules engine
   reading `policydb`.
