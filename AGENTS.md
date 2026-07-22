@@ -84,7 +84,12 @@ See [README.md](README.md#the-stage-roadmap-course-spine) for the full vision.
 │   (unused Stage 0)   │   to centralized PDP
 └──────────┬───────────┘
            │
-    ┌──────▼──────────────────────┐
+    ┌──────▼───────────────────────┐
+    │ Meridian.Services            │ ← domain layer (IExpenseService,
+    │ Meridian.DataAccess          │   CallerContext, Roles / EF Core repo)
+    └──────────┬────────────────────┘
+               │
+    ┌──────────▼──────────────────┐
     │ Meridian.Pdp.Service        │
     │ POST /access/v1/evaluation  │
     │ POST /access/v1/evaluations │
@@ -94,7 +99,7 @@ See [README.md](README.md#the-stage-roadmap-course-spine) for the full vision.
     └──────────────────────────────┘
 ```
 
-**Key:** Authentication happens at Duende; authorization policy logic centralizes in the PDP. The PEP client (`AuthZen.Pep`) delegates decisions to the PDP via AuthZEN 1.0 HTTP contract.
+**Key:** Authentication happens at Duende; authorization policy logic centralizes in the PDP. The PEP client (`AuthZen.Pep`) delegates decisions to the PDP via AuthZEN 1.0 HTTP contract. `Meridian.Services`/`Meridian.DataAccess` (solution folder `Common/`) hold the domain logic shared by the API layer, independent of where authorization decisions are made.
 
 ---
 
@@ -104,38 +109,54 @@ See [README.md](README.md#the-stage-roadmap-course-spine) for the full vision.
 
 **File:** [Services/Meridian.Expenses.Api/Authorization/AuthorizationPrimitives.cs](Services/Meridian.Expenses.Api/Authorization/AuthorizationPrimitives.cs)
 
-- **Roles:** `employee`, `manager`, `finance`
-- **Policies:** `CanApprove` (manager | finance), `CanViewAll` (finance only)
-- **Resource-based ownership:** `OwnerOrPrivilegedHandler` — user, manager, or finance can access an expense
-- **Imperative rules:** `ApprovalRules.CanApprove()` — managers capped at $5,000; finance unlimited
+- **Roles:** `employee`, `manager`, `finance` — defined in [Meridian.Services/Roles.cs](Meridian.Services/Roles.cs), not the API project (shared across services)
+- **Policies:** `CanViewAll` (finance only, declarative `[Authorize]` policy)
+- **Resource-based ownership:** `OwnerOrPrivilegedHandler` — user, manager (same department), or finance can access an expense
+- **Resource-based approval:** `ApprovalHandler` against `ApprovalRequirement` — finance unlimited; managers capped at `ApprovalRules.ManagerLimit` ($5,000) and scoped to their own department
 
-**Template for new services:** Copy `AuthorizationPrimitives.cs` structure to Receipts/Reporting; later (Stage 3+), replace handlers with PEP client calls.
+**Template for new services:** Copy `AuthorizationPrimitives.cs` + the two handlers to Receipts/Reporting; later (Stage 3+), replace handlers with PEP client calls.
+
+### Domain Layer (Meridian.Services / Meridian.DataAccess)
+
+**Files:** [Meridian.Services](Meridian.Services) (business logic), [Meridian.DataAccess](Meridian.DataAccess) (EF Core) — grouped under the `Common/` solution folder, physically at the repo root.
+
+- `IExpenseService`/`ExpenseService` — visibility rules (finance sees all, others see their own), create/decide workflows
+- `IExpenseRepository`/`ExpenseRepository` + `ExpensesDbContext` — EF Core against the Aspire-provisioned `expensesdb`
+- `CallerContext` — decouples the service layer from `ClaimsPrincipal`; built via `ClaimsPrincipalCallerContextExtensions.ToCallerContext()`
+- Consumed by `Meridian.Expenses.Api`'s endpoints and DI; will be shared by Receipts/Reporting as they're fleshed out (Stage 4)
 
 ### Minimal APIs with Authorization
 
 **File:** [Services/Meridian.Expenses.Api/Endpoints/ExpenseEndpoints.cs](Services/Meridian.Expenses.Api/Endpoints/ExpenseEndpoints.cs)
 
 - Routes grouped under `/expenses`
-- Declarative: `RequireAuthorization(policyName)` on route
-- Imperative: Resource checks inside handlers (e.g., ownership, amount limits)
-- User identity: Extracts `ClaimTypes.NameIdentifier` or `"sub"` claim from JWT
+- Declarative: `RequireAuthorization()` on the route group; `CanViewAll` policy for finance-only endpoints
+- Imperative: `IAuthorizationService.AuthorizeAsync` against `OwnerOrPrivilegedRequirement`/`ApprovalRequirement` inside handlers, using DTOs returned by `IExpenseService`
+- User identity: `ClaimsPrincipal` extensions (`GetUserId()`, `GetDepartment()`, `ToCallerContext()`) extract `ClaimTypes.NameIdentifier`/`"sub"` and department claims from the JWT
 
 **Pattern:** Every Minimal API endpoint in Stage 0 follows this model.
 
 ### Dependency Injection & Configuration
 
-**File:** [Services/Meridian.Expenses.Api/Program.cs](Services/Meridian.Expenses.Api/Program.cs) (template for all services)
+**File:** [Services/Meridian.Expenses.Api/Program.cs](Services/Meridian.Expenses.Api/Program.cs) (template for services with real domain logic)
 
 ```csharp
-builder.AddServiceDefaults();              // ← ServiceDefaults (OTEL, health, discovery)
-builder.AddNpgsqlDbContext<ExpenseContext>("expensesdb"); // ← Aspire-provisioned DB
-builder.AddAuthentication().AddJwtBearer(...); // ← JWT from Duende
-builder.AddAuthorization(opts => { ... }); // ← Policies + custom handlers
+builder.AddServiceDefaults();                              // ← ServiceDefaults (OTEL, health, discovery)
+builder.AddNpgsqlDbContext<ExpensesDbContext>("expensesdb"); // ← Aspire-provisioned DB
+
+builder.Services.AddScoped<IExpenseRepository, ExpenseRepository>(); // ← Meridian.DataAccess
+builder.Services.AddScoped<IExpenseService, ExpenseService>();       // ← Meridian.Services
+
+builder.AddMeridianApiAuthentication();                    // ← JWT bearer from Duende (in ServiceDefaults)
+builder.Services.AddAuthorization(opts => { ... });         // ← Policies + custom handlers
 ```
+
+Receipts/Reporting (still skeletons) call `AddServiceDefaults()` + `AddMeridianApiAuthentication()` only — no DB, domain layer, or authorization handlers yet.
 
 **ServiceDefaults:** [Aspire/Meridian.ServiceDefaults/Extensions.cs](Aspire/Meridian.ServiceDefaults/Extensions.cs)
 - Wires **OpenTelemetry** (ActivitySource: `"Meridian.AuthZen"`, Meter: `"Meridian.AuthZen"`)
 - Adds health checks, resilience policies, service discovery
+- `AddMeridianApiAuthentication()` — JWT bearer validation against the Duende IdentityServer, shared by every service
 - Called once via `builder.AddServiceDefaults()` in every service
 
 ### User Identity Flow
@@ -163,9 +184,12 @@ builder.AddAuthorization(opts => { ... }); // ← Policies + custom handlers
 | Pattern | File | Usage |
 |---------|------|-------|
 | **Role policy + handler** | [AuthorizationPrimitives.cs](Services/Meridian.Expenses.Api/Authorization/AuthorizationPrimitives.cs) | Reusable template for Receipts/Reporting in Stage 4 |
+| **Roles / policy names** | [Roles.cs](Meridian.Services/Roles.cs) | Shared across services (`Common/` solution folder) |
+| **Domain services** | [ExpenseService.cs](Meridian.Services/ExpenseService.cs) | Visibility/create/decide workflows, consumed by endpoints |
+| **EF Core data access** | [ExpenseRepository.cs](Meridian.DataAccess/ExpenseRepository.cs) | Against Aspire-provisioned `expensesdb` |
 | **JWT bearer + OIDC flow** | [Program.cs (Expenses.Api)](Services/Meridian.Expenses.Api/Program.cs) | Standard for all APIs; minimal change required per service |
 | **Minimal API routing** | [ExpenseEndpoints.cs](Services/Meridian.Expenses.Api/Endpoints/ExpenseEndpoints.cs) | Exemplifies `RequireAuthorization()` + resource checks |
-| **ServiceDefaults wiring** | [Extensions.cs (ServiceDefaults)](Aspire/Meridian.ServiceDefaults/Extensions.cs) | Single-call pattern; includes OTEL setup |
+| **ServiceDefaults wiring** | [Extensions.cs (ServiceDefaults)](Aspire/Meridian.ServiceDefaults/Extensions.cs) | Single-call pattern; includes OTEL setup + `AddMeridianApiAuthentication()` |
 | **PDP contract (AuthZEN 1.0)** | [EvaluationModel.cs](Authorization/AuthZen.Contracts/EvaluationModel.cs) | SARC model; used by PEP client (Stage 3+) |
 | **PEP client + OTEL** | [AuthZenPolicyDecisionClient.cs](Authorization/AuthZen.Pep/AuthZenPolicyDecisionClient.cs) | Instruments decisions; wired in Stage 3+ |
 | **App orchestration** | [AppHost.cs](Aspire/Meridian.AppHost/AppHost.cs) | Database provisioning, service references, ordering |
@@ -207,12 +231,13 @@ builder.AddAuthorization(opts => { ... }); // ← Policies + custom handlers
 
 ## Workflow for Adding Authorization to a New Service
 
-1. **Copy the template:** `AuthorizationPrimitives.cs` + role/policy definitions
-2. **Add Minimal APIs:** Pattern from `ExpenseEndpoints.cs` (decl. policies + imperative checks)
-3. **Wire DI:** Follow [Program.cs](Services/Meridian.Expenses.Api/Program.cs) (JWT + policies + handlers)
-4. **Register in AppHost:** Add `.AddProject()` + `.WithReference()` in [AppHost.cs](Aspire/Meridian.AppHost/AppHost.cs)
-5. **Test:** Ensure Aspire dashboard shows all services healthy
-6. **Stage 3+:** Replace handlers with PEP client calls via `AuthZen.Pep`
+1. **Copy the template:** `AuthorizationPrimitives.cs` + handlers; reuse `Roles` from `Meridian.Services` rather than redefining roles per service
+2. **Add a domain layer (optional):** Follow `Meridian.Services`/`Meridian.DataAccess` if the service needs real data access, not just skeleton endpoints
+3. **Add Minimal APIs:** Pattern from `ExpenseEndpoints.cs` (decl. policies + imperative checks)
+4. **Wire DI:** Follow [Program.cs](Services/Meridian.Expenses.Api/Program.cs) (DB + domain layer + JWT + policies + handlers)
+5. **Register in AppHost:** Add `.AddProject()` + `.WithReference()` in [AppHost.cs](Aspire/Meridian.AppHost/AppHost.cs)
+6. **Test:** Ensure Aspire dashboard shows all services healthy
+7. **Stage 3+:** Replace handlers with PEP client calls via `AuthZen.Pep`
 
 ---
 
