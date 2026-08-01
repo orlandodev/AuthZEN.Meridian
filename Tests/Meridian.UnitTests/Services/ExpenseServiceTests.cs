@@ -51,6 +51,36 @@ public class ExpenseServiceTests
 
         result.Should().ContainSingle();
         repository.Verify(r => r.GetAllAsync(It.IsAny<CancellationToken>()), Times.Never);
+        repository.Verify(r => r.GetByDepartmentAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetVisibleExpensesAsync_ReturnsDepartmentExpenses_ForManagerCaller()
+    {
+        var repository = new Mock<IExpenseRepository>();
+        repository.Setup(r => r.GetByDepartmentAsync(Department, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([BuildExpense(ownerUserId: "u-emma"), BuildExpense(ownerUserId: "u-mateo")]);
+        var sut = new ExpenseService(repository.Object);
+
+        var result = await sut.GetVisibleExpensesAsync(BuildCaller(isManager: true), CancellationToken.None);
+
+        result.Should().HaveCount(2);
+        repository.Verify(r => r.GetAllAsync(It.IsAny<CancellationToken>()), Times.Never);
+        repository.Verify(r => r.GetByOwnerAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetVisibleExpensesAsync_FallsBackToOwnedExpenses_ForManagerCallerWithNoDepartment()
+    {
+        var repository = new Mock<IExpenseRepository>();
+        repository.Setup(r => r.GetByOwnerAsync(OwnerUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([BuildExpense()]);
+        var sut = new ExpenseService(repository.Object);
+
+        var result = await sut.GetVisibleExpensesAsync(BuildCaller(isManager: true, department: null), CancellationToken.None);
+
+        result.Should().ContainSingle();
+        repository.Verify(r => r.GetByDepartmentAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

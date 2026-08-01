@@ -5,7 +5,8 @@ namespace Meridian.Services;
 
 public interface IExpenseService
 {
-    // Finance sees every expense; everyone else sees only their own.
+    // Finance sees every expense; managers see their department's expenses;
+    // everyone else sees only their own.
     Task<IReadOnlyList<ExpenseDto>> GetVisibleExpensesAsync(CallerContext caller, CancellationToken ct);
 
     Task<ExpenseDto?> GetByIdAsync(Guid id, CancellationToken ct);
