@@ -65,6 +65,21 @@ public class ExpenseRepositoryTests
     }
 
     [Fact]
+    public async Task GetByDepartmentAsync_ExcludesDraftExpenses_EvenWhenOwnedByAnotherUserInDepartment()
+    {
+        using var db = CreateContext();
+        var submitted = NewExpense(ownerUserId: "u-emma", department: "Sales", status: ExpenseStatus.Submitted);
+        var draft = NewExpense(ownerUserId: "u-mateo", department: "Sales", status: ExpenseStatus.Draft);
+        db.Expenses.AddRange(submitted, draft);
+        await db.SaveChangesAsync();
+        var sut = new ExpenseRepository(db);
+
+        var result = await sut.GetByDepartmentAsync("Sales", CancellationToken.None);
+
+        result.Should().ContainSingle().Which.Id.Should().Be(submitted.Id);
+    }
+
+    [Fact]
     public async Task GetByIdAsync_ReturnsNull_WhenExpenseDoesNotExist()
     {
         using var db = CreateContext();

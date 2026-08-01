@@ -1,3 +1,4 @@
+using Meridian.DataAccess.Models;
 using Meridian.Expenses.Api.Authorization;
 using Meridian.Services;
 using Meridian.Services.DTOs;
@@ -61,5 +62,23 @@ public class OwnerOrPrivilegedHandlerTests
         var expense = BuildExpense(ownerUserId: OwnerUserId, department: Department);
 
         (await SucceedsAsync(user, expense)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Manager_Fails_WhenResourceIsDraft_EvenWithMatchingDepartment()
+    {
+        var user = BuildUser(userId: OtherUserId, role: Roles.Manager, department: Department);
+        var expense = BuildExpense(ownerUserId: OwnerUserId, department: Department, status: ExpenseStatus.Draft);
+
+        (await SucceedsAsync(user, expense)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Manager_Succeeds_WhenResourceIsSubmitted_EvenThoughNotYetDecided()
+    {
+        var user = BuildUser(userId: OtherUserId, role: Roles.Manager, department: Department);
+        var expense = BuildExpense(ownerUserId: OwnerUserId, department: Department, status: ExpenseStatus.Submitted);
+
+        (await SucceedsAsync(user, expense)).Should().BeTrue();
     }
 }
