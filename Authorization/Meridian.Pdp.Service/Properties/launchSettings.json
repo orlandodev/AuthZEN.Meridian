@@ -3,10 +3,11 @@
     "Meridian.Pdp.Service": {
       "commandName": "Project",
       "launchBrowser": true,
+      "launchUrl": ".well-known/authzen-configuration",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
-      "applicationUrl": "https://localhost:59580;http://localhost:59586"
+      "applicationUrl": "https://localhost:59580"
     }
   }
 }

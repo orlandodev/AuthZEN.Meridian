@@ -20,6 +20,8 @@
     <ProjectReference Include="..\..\Common\Meridian.DataAccess\Meridian.DataAccess.csproj" />
     <ProjectReference Include="..\..\Common\Meridian.Services\Meridian.Services.csproj" />
     <ProjectReference Include="..\..\Services\Meridian.Expenses.Api\Meridian.Expenses.Api.csproj" />
+    <ProjectReference Include="..\..\Services\Meridian.Receipts.Api\Meridian.Receipts.Api.csproj" />
+    <ProjectReference Include="..\..\Services\Meridian.Reporting.Api\Meridian.Reporting.Api.csproj" />
   </ItemGroup>
 
   <ItemGroup>

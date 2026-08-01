@@ -81,6 +81,23 @@ h3 { font-size: 1.05rem; color: var(--color-ink-muted); text-transform: uppercas
 .brand:hover { color: #fff; opacity: 0.9; }
 .brand img { display: block; }
 
+.site-header__left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.site-nav {
+  display: flex;
+  gap: 16px;
+}
+.site-nav a {
+  color: #C9D3E0;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.site-nav a:hover { color: #fff; }
+
 .identity {
   color: #E7ECF3;
   font-size: 0.9rem;
@@ -208,6 +225,7 @@ input:focus {
 .field { margin-bottom: 14px; }
 
 button, .btn {
+  display: inline-block;
   font-family: var(--font-ui);
   font-size: 0.9rem;
   font-weight: 600;
@@ -216,9 +234,10 @@ button, .btn {
   border: 1px solid var(--color-primary);
   background: var(--color-primary);
   color: #fff;
+  text-decoration: none;
   cursor: pointer;
 }
-button:hover { background: var(--color-primary-hover); }
+button:hover, .btn:hover { background: var(--color-primary-hover); color: #fff; }
 button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 
 button.secondary {
@@ -226,17 +245,6 @@ button.secondary {
   color: var(--color-primary);
 }
 button.secondary:hover { background: #EEF2F6; }
-
-button.btn-sm {
-  padding: 4px 10px;
-  font-size: 0.8rem;
-}
-
-.decision-actions {
-  display: flex;
-  gap: 6px;
-}
-.decision-actions form { margin: 0; }
 
 button.link {
   background: none;

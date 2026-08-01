@@ -3,10 +3,11 @@
     "Meridian.Expenses.Api": {
       "commandName": "Project",
       "launchBrowser": true,
+      "launchUrl": "scalar",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
-      "applicationUrl": "https://localhost:59575;http://localhost:59584"
+      "applicationUrl": "https://localhost:59575"
     }
   }
 }

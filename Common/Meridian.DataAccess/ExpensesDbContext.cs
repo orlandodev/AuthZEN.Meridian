@@ -8,7 +8,7 @@ public class ExpensesDbContext(DbContextOptions<ExpensesDbContext> options) : Db
     public DbSet<Expense> Expenses => Set<Expense>();
 }
 
-public static class SeedData
+public static class ExpensesSeedData
 {
     // Owner ids match the sub values of the Duende test users (see IdentityServer/TestUsers.cs).
     public static async Task EnsureSeededAsync(ExpensesDbContext db)

@@ -4,7 +4,10 @@ using Meridian.ServiceDefaults;
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
-builder.Services.AddIdentityServer()
+builder.Services.AddIdentityServer(options =>
+    {
+        options.EmitStaticAudienceClaim = true;
+    })
     .AddInMemoryIdentityResources(Config.IdentityResources)
     .AddInMemoryApiScopes(Config.ApiScopes)
     .AddInMemoryApiResources(Config.ApiResources)

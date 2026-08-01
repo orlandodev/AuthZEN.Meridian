@@ -12,6 +12,7 @@
 	<ItemGroup>
 		<PackageReference Include="Aspire.Hosting.AppHost" />
 		<PackageReference Include="Aspire.Hosting.PostgreSQL" />
+		<PackageReference Include="Aspire.Hosting.Azure.Storage" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\..\Apps\Meridian.ExpensePortal\Meridian.ExpensePortal.csproj" />
