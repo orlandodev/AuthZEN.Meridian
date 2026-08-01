@@ -11,8 +11,11 @@ public sealed class ExpenseRepository(ExpensesDbContext db) : IExpenseRepository
     public Task<List<Expense>> GetByOwnerAsync(string ownerUserId, CancellationToken ct) =>
         db.Expenses.AsNoTracking().Where(e => e.OwnerUserId == ownerUserId).ToListAsync(ct);
 
+    // Manager-scoped view: Draft expenses stay private to their owner until submitted.
     public Task<List<Expense>> GetByDepartmentAsync(string department, CancellationToken ct) =>
-        db.Expenses.AsNoTracking().Where(e => e.Department == department).ToListAsync(ct);
+        db.Expenses.AsNoTracking()
+            .Where(e => e.Department == department && e.Status != ExpenseStatus.Draft)
+            .ToListAsync(ct);
 
     public Task<Expense?> GetByIdAsync(Guid id, CancellationToken ct) =>
         db.Expenses.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id, ct);
