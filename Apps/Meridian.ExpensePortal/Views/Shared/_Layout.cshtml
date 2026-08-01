@@ -11,10 +11,22 @@
 <body>
     <header class="site-header">
         <div class="site-header__inner">
-            <a class="brand" href="/">
-                <img src="~/images/logo-mark-inverse.svg" alt="" width="32" height="32" />
-                <span>Meridian Expenses</span>
-            </a>
+            <div class="site-header__left">
+                <a class="brand" href="/">
+                    <img src="~/images/logo-mark-inverse.svg" alt="" width="32" height="32" />
+                    <span>Meridian Expenses</span>
+                </a>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <nav class="site-nav">
+                        <a asp-controller="Expenses" asp-action="Index">Expenses</a>
+                        @if (User.IsInRole("manager") || User.IsInRole("finance"))
+                        {
+                            <a asp-controller="Reports" asp-action="Index">Reports</a>
+                        }
+                    </nav>
+                }
+            </div>
             @if (User.Identity?.IsAuthenticated == true)
             {
                 <div class="identity">

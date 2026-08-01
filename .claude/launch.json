@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "aspire-apphost",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "Aspire/Meridian.AppHost", "--launch-profile", "https"],
+      "port": 17207,
+      "url": "https://localhost:17207"
+    }
+  ]
+}

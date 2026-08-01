@@ -16,7 +16,7 @@ public class SeedDataTests
     {
         using var db = CreateContext();
 
-        await SeedData.EnsureSeededAsync(db);
+        await ExpensesSeedData.EnsureSeededAsync(db);
 
         var expenses = await db.Expenses.ToListAsync();
         expenses.Should().HaveCount(3);
@@ -27,9 +27,9 @@ public class SeedDataTests
     public async Task EnsureSeededAsync_DoesNotDuplicateSeed_WhenCalledTwice()
     {
         using var db = CreateContext();
-        await SeedData.EnsureSeededAsync(db);
+        await ExpensesSeedData.EnsureSeededAsync(db);
 
-        await SeedData.EnsureSeededAsync(db);
+        await ExpensesSeedData.EnsureSeededAsync(db);
 
         (await db.Expenses.CountAsync()).Should().Be(3);
     }
@@ -49,7 +49,7 @@ public class SeedDataTests
         });
         await db.SaveChangesAsync();
 
-        await SeedData.EnsureSeededAsync(db);
+        await ExpensesSeedData.EnsureSeededAsync(db);
 
         (await db.Expenses.CountAsync()).Should().Be(1);
     }
