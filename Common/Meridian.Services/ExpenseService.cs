@@ -7,11 +7,17 @@ namespace Meridian.Services;
 
 public sealed class ExpenseService(IExpenseRepository repository) : IExpenseService
 {
+    // Mirrors OwnerOrPrivilegedHandler's rule (owner, finance, or same-department
+    // manager) as a query scope instead of a per-resource check, since there's no
+    // single ExpenseDto here to evaluate the handler against.
     public async Task<IReadOnlyList<ExpenseDto>> GetVisibleExpensesAsync(CallerContext caller, CancellationToken ct)
     {
-        var expenses = caller.IsFinance
-            ? await repository.GetAllAsync(ct)
-            : await repository.GetByOwnerAsync(caller.UserId, ct);
+        var expenses = caller switch
+        {
+            { IsFinance: true } => await repository.GetAllAsync(ct),
+            { IsManager: true, Department: not null } => await repository.GetByDepartmentAsync(caller.Department, ct),
+            _ => await repository.GetByOwnerAsync(caller.UserId, ct)
+        };
         return expenses.Select(e => e.ToDto()).ToList();
     }
 

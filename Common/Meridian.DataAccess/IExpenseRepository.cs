@@ -8,6 +8,8 @@ public interface IExpenseRepository
 
     Task<List<Expense>> GetByOwnerAsync(string ownerUserId, CancellationToken ct);
 
+    Task<List<Expense>> GetByDepartmentAsync(string department, CancellationToken ct);
+
     // No-tracking read, for responses that never get mutated.
     Task<Expense?> GetByIdAsync(Guid id, CancellationToken ct);
 
