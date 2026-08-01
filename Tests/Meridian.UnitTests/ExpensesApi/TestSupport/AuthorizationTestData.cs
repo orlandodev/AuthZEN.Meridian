@@ -32,7 +32,8 @@ public static class AuthorizationTestData
     // Authorization handlers now check the ExpenseDto that crosses the API
     // boundary, not the EF Core entity, so test data builds the DTO directly.
     public static ExpenseDto BuildExpense(
-        string ownerUserId = OwnerUserId, string department = Department, decimal amount = 100m) =>
+        string ownerUserId = OwnerUserId, string department = Department, decimal amount = 100m,
+        ExpenseStatus status = ExpenseStatus.Submitted) =>
         new(
             Id: Guid.NewGuid(),
             OwnerUserId: ownerUserId,
@@ -40,7 +41,7 @@ public static class AuthorizationTestData
             Amount: amount,
             Currency: "USD",
             Category: "Test",
-            Status: ExpenseStatus.Submitted,
+            Status: status,
             ApproverUserId: null,
             CreatedAt: DateTimeOffset.UtcNow,
             DecidedAt: null);
