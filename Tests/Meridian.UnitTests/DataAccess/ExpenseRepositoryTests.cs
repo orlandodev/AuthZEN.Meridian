@@ -51,6 +51,20 @@ public class ExpenseRepositoryTests
     }
 
     [Fact]
+    public async Task GetByDepartmentAsync_ReturnsOnlyThatDepartmentsExpenses()
+    {
+        using var db = CreateContext();
+        var sales = NewExpense(ownerUserId: "u-emma", department: "Sales");
+        db.Expenses.AddRange(sales, NewExpense(ownerUserId: "u-priya", department: "Finance"));
+        await db.SaveChangesAsync();
+        var sut = new ExpenseRepository(db);
+
+        var result = await sut.GetByDepartmentAsync("Sales", CancellationToken.None);
+
+        result.Should().ContainSingle().Which.Id.Should().Be(sales.Id);
+    }
+
+    [Fact]
     public async Task GetByIdAsync_ReturnsNull_WhenExpenseDoesNotExist()
     {
         using var db = CreateContext();
