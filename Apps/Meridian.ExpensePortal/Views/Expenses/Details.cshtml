@@ -1,0 +1,13 @@
+@model ExpenseDto
+
+<h1>Expense</h1>
+
+<div class="card">
+    <dl>
+        <dt>Category</dt><dd>@Model.Category</dd>
+        <dt>Department</dt><dd>@Model.Department</dd>
+        <dt>Amount</dt><dd>@Model.Amount.ToString("C")</dd>
+        <dt>Status</dt><dd><span class="status-pill status-@Model.Status.ToString().ToLowerInvariant()">@Model.Status</span></dd>
+    </dl>
+    <a asp-controller="Receipts" asp-action="ForExpense" asp-route-expenseId="@Model.Id">View receipts</a>
+</div>

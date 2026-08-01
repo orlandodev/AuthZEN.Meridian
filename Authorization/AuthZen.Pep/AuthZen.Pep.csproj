@@ -5,6 +5,7 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
-    <ProjectReference Include="..\AuthZen.Contracts\AuthZen.Contracts.csproj" />
+	  <PackageReference Include="Duende.AccessTokenManagement" />
+	  <ProjectReference Include="..\AuthZen.Contracts\AuthZen.Contracts.csproj" />
   </ItemGroup>
 </Project>

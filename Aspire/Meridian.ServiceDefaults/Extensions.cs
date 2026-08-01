@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
+using Scalar.AspNetCore;
 
 namespace Meridian.ServiceDefaults;
 
@@ -98,6 +99,45 @@ public static class Extensions
             });
 
         return builder;
+    }
+
+    // Opt-in OpenAPI + Scalar UI for services that expose an HTTP API. Not part of
+    // AddServiceDefaults/MapDefaultEndpoints since not every Meridian service (e.g. the
+    // MVC portal, IdentityServer) has an API document to publish.
+    public static TBuilder AddMeridianOpenApi<TBuilder>(this TBuilder builder)
+        where TBuilder : IHostApplicationBuilder
+    {
+        var identityServerUrl = builder.Configuration["services:identityserver:https:0"]
+            ?? builder.Configuration["services:identityserver:http:0"];
+
+        builder.Services.AddOpenApiWithAuth(
+            authority: identityServerUrl!,
+            scopes: new Dictionary<string, string>
+            {
+                { "meridian.reporting.api", "Meridian Reporting API" },
+                { "meridian.expenses.api", "Meridian Expenses API" },
+                { "meridian.receipts.api", "Meridian Receipts API" }
+            });
+        return builder;
+    }
+
+    // Exposes the OpenAPI document at /openapi/v1.json and the Scalar UI at /scalar/v1,
+    // Development only — these are exploration/debugging surfaces, not for production traffic.
+    public static WebApplication MapMeridianOpenApi(this WebApplication app, Dictionary<string, string> oauthScopes)
+    {
+        if (app.Environment.IsDevelopment())
+        {
+            app.MapOpenApi();
+            app.MapScalarApiReference(options => options
+                .AddPreferredSecuritySchemes("oauth2", "Meridian OAuth2")
+                .AddAuthorizationCodeFlow("oauth2", flow =>
+                {
+                    flow.ClientId = "meridian.portal";
+                    flow.Pkce = Pkce.Sha256;
+                    flow.SelectedScopes = [.. oauthScopes.Keys];
+                }));
+        }
+        return app;
     }
 
     public static WebApplication MapDefaultEndpoints(this WebApplication app)

@@ -2,6 +2,7 @@
   <ItemGroup>
     <PackageReference Include="Duende.AccessTokenManagement.OpenIdConnect" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" />
+    <PackageReference Include="Microsoft.OpenApi" />
     <ProjectReference Include="..\..\Aspire\Meridian.ServiceDefaults\Meridian.ServiceDefaults.csproj" />
   </ItemGroup>
 </Project>

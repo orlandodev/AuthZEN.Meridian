@@ -2,6 +2,8 @@
   <ItemGroup>
     <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.OpenApi" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
     <ProjectReference Include="..\..\Aspire\Meridian.ServiceDefaults\Meridian.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\Common\Meridian.DataAccess\Meridian.DataAccess.csproj" />

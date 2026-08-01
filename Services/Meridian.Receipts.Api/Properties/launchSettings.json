@@ -3,10 +3,11 @@
     "Meridian.Receipts.Api": {
       "commandName": "Project",
       "launchBrowser": true,
+      "launchUrl": "scalar",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
-      "applicationUrl": "https://localhost:59576;http://localhost:59582"
+      "applicationUrl": "https://localhost:59576"
     }
   }
 }

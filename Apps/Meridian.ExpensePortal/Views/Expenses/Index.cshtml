@@ -4,8 +4,8 @@
 
 @if (User.IsInRole("manager") || User.IsInRole("finance"))
 {
-    <p class="hint">You can approve or reject submitted expenses below. These buttons are UX
-       only — the API re-checks every decision independently, including the manager amount limit.</p>
+    <p class="hint">You can approve submitted expenses below. This button is UX only —
+       the API re-checks every approval independently, including the manager amount limit.</p>
 }
 
 @if (TempData["Error"] is string error)
@@ -22,13 +22,12 @@
     {
         <table>
             <thead>
-                <tr><th>Submitted by</th><th>Category</th><th>Department</th><th>Amount</th><th>Status</th><th></th></tr>
+                <tr><th>Category</th><th>Department</th><th>Amount</th><th>Status</th><th></th><th></th><th></th></tr>
             </thead>
             <tbody>
             @foreach (var expense in Model)
             {
                 <tr>
-                    <td>@expense.OwnerUserId</td>
                     <td>@expense.Category</td>
                     <td>@expense.Department</td>
                     <td class="amount">@expense.Amount.ToString("C")</td>
@@ -37,17 +36,17 @@
                         @if ((User.IsInRole("manager") || User.IsInRole("finance"))
                              && expense.Status == ExpenseStatus.Submitted)
                         {
-                            <div class="decision-actions">
-                                <form method="post" asp-controller="Expenses" asp-action="Approve">
-                                    <input type="hidden" name="id" value="@expense.Id" />
-                                    <button type="submit" class="secondary btn-sm">Approve</button>
-                                </form>
-                                <form method="post" asp-controller="Expenses" asp-action="Reject">
-                                    <input type="hidden" name="id" value="@expense.Id" />
-                                    <button type="submit" class="secondary btn-sm">Reject</button>
-                                </form>
-                            </div>
+                            <form method="post" asp-controller="Expenses" asp-action="Approve">
+                                <input type="hidden" name="id" value="@expense.Id" />
+                                <button type="submit" class="secondary">Approve</button>
+                            </form>
                         }
+                    </td>
+                    <td>
+                        <a asp-controller="Receipts" asp-action="ForExpense" asp-route-expenseId="@expense.Id">Receipts</a>
+                    </td>
+                    <td>
+                        <a asp-controller="Expenses" asp-action="Details" asp-route-id="@expense.Id">Details</a>
                     </td>
                 </tr>
             }
@@ -59,6 +58,7 @@
 <h3>New expense (draft)</h3>
 <div class="card">
     <form method="post" asp-controller="Expenses" asp-action="Create">
+        <div class="field"><label>Department</label><input name="Department" /></div>
         <div class="field"><label>Category</label><input name="Category" /></div>
         <div class="field"><label>Amount</label><input name="Amount" type="number" step="0.01" /></div>
         <button type="submit">Add draft</button>
