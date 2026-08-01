@@ -13,7 +13,7 @@ public static class ExpenseEndpoints
     {
         var group = app.MapGroup("/expenses").RequireAuthorization();
 
-        // List: finance sees all, everyone else sees their own.
+        // List: finance sees all, managers see their department's, everyone else sees their own.
         group.MapGet("/", async (ClaimsPrincipal user, IExpenseService expenses, CancellationToken ct) =>
             Results.Ok(await expenses.GetVisibleExpensesAsync(user.ToCallerContext(), ct)));
 
