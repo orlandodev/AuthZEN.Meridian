@@ -1,3 +1,4 @@
+using System.Net;
 using Meridian.ExpensePortal.Models;
 using Meridian.ExpensePortal.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -16,6 +17,25 @@ public class ExpensesController(ExpensesApiClient expensesApi) : Controller
     {
         var expenses = await expensesApi.GetMyExpensesAsync();
         return View(expenses);
+    }
+
+    // Unlike Index (always scoped to the caller's own expenses), this reads a
+    // single expense by id — the same resource-based check Approve/Reject relies
+    // on (owner, same-department manager, or finance). GetExpenseAsync throws on
+    // a non-owner/non-privileged caller's 403, since nothing else in the Portal
+    // called this method before now.
+    public async Task<IActionResult> Details(Guid id)
+    {
+        try
+        {
+            var expense = await expensesApi.GetExpenseAsync(id);
+            return expense is null ? NotFound() : View(expense);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Forbidden)
+        {
+            TempData["Error"] = "You're not authorized to view this expense.";
+            return RedirectToAction(nameof(Index));
+        }
     }
 
     [HttpPost]

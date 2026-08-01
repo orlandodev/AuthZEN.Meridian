@@ -1,0 +1,38 @@
+@model List<DepartmentSpendSummary>
+
+<h1>Department Spend</h1>
+
+@if (TempData["Error"] is string error)
+{
+    <div class="alert">@error</div>
+}
+
+<div class="card">
+    @if (Model.Count == 0)
+    {
+        <p class="empty-state">No department data yet.</p>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr><th>Department</th><th>Period</th><th>Total Amount</th><th>Currency</th></tr>
+            </thead>
+            <tbody>
+            @foreach (var summary in Model)
+            {
+                <tr>
+                    <td>@summary.Department</td>
+                    <td>@summary.Period</td>
+                    <td class="amount">@summary.TotalAmount.ToString("C")</td>
+                    <td class="amount">@summary.Currency</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+</div>
+
+<a class="btn" asp-controller="Reports" asp-action="Export">Export CSV</a>
+<p class="hint" style="margin-top:8px">Exports are only available during business hours —
+   this is enforced by the PDP in Stage 4, and imperatively in Stage 1.</p>
