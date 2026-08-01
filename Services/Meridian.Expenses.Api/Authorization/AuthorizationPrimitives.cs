@@ -4,6 +4,7 @@ namespace Meridian.Expenses.Api.Authorization;
 
 public static class Policies
 {
+    public const string CanApprove = "CanApprove";   // manager or finance
     public const string CanViewAll = "CanViewAll";   // finance only
 }
 

@@ -3,10 +3,11 @@
     "Meridian.Reporting.Api": {
       "commandName": "Project",
       "launchBrowser": true,
+      "launchUrl": "scalar",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
-      "applicationUrl": "https://localhost:59578;http://localhost:59585"
+      "applicationUrl": "https://localhost:59578"
     }
   }
 }

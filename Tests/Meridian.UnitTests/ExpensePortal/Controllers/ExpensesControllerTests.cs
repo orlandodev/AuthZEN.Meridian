@@ -141,4 +141,43 @@ public class ExpensesControllerTests
             .Which.ActionName.Should().Be(nameof(ExpensesController.Index));
         sut.TempData["Error"].Should().Be("You're not authorized to decide this expense.");
     }
+
+    [Fact]
+    public async Task Details_ReturnsViewWithExpense_WhenFound()
+    {
+        var sut = BuildController(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(ExpenseJson(ExpenseId))
+        });
+
+        var result = await sut.Details(ExpenseId);
+
+        var view = result.Should().BeOfType<ViewResult>().Subject;
+        view.Model.Should().BeAssignableTo<ExpenseDto>().Which.Id.Should().Be(ExpenseId);
+    }
+
+    [Fact]
+    public async Task Details_ReturnsNotFound_WhenExpenseDoesNotExist()
+    {
+        var sut = BuildController(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
+
+        var result = await sut.Details(ExpenseId);
+
+        result.Should().BeOfType<NotFoundResult>();
+    }
+
+    // Pins the drift bug's UI-reachable path: a manager viewing another
+    // department's expense (or any other non-owner/non-privileged caller) hits
+    // this 403 rather than an unhandled exception.
+    [Fact]
+    public async Task Details_OnForbidden_SetsErrorMessage_AndRedirectsToIndex()
+    {
+        var sut = BuildController(_ => new HttpResponseMessage(HttpStatusCode.Forbidden));
+
+        var result = await sut.Details(ExpenseId);
+
+        result.Should().BeOfType<RedirectToActionResult>()
+            .Which.ActionName.Should().Be(nameof(ExpensesController.Index));
+        sut.TempData["Error"].Should().Be("You're not authorized to view this expense.");
+    }
 }

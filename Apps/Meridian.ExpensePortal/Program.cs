@@ -35,7 +35,12 @@ builder.Services.AddAuthentication(options =>
         options.GetClaimsFromUserInfoEndpoint = true;
 
         options.Scope.Clear();
-        foreach (var s in new[] { "openid", "profile", "roles", "org", "meridian.api", "offline_access" })
+        foreach (var s in new[]
+        {
+            "openid", "profile", "roles", "org",
+            "meridian.expenses.api", "meridian.receipts.api", "meridian.reporting.api",
+            "offline_access"
+        })
         {
             options.Scope.Add(s);
         }
@@ -58,8 +63,15 @@ builder.Services.AddAuthorization();
 // refresh token (requires the "offline_access" scope, requested above).
 builder.Services.AddOpenIdConnectAccessTokenManagement();
 
-// Typed client to the Expenses API (Aspire service discovery resolves "expenses-api").
+// Typed clients to the business APIs (Aspire service discovery resolves each
+// "-api" name).
 builder.Services.AddHttpClient<ExpensesApiClient>(c => c.BaseAddress = new("https+http://expenses-api"))
+    .AddUserAccessTokenHandler();
+
+builder.Services.AddHttpClient<ReportingApiClient>(c => c.BaseAddress = new("https+http://reporting-api"))
+    .AddUserAccessTokenHandler();
+
+builder.Services.AddHttpClient<ReceiptsApiClient>(c => c.BaseAddress = new("https+http://receipts-api"))
     .AddUserAccessTokenHandler();
 
 var app = builder.Build();

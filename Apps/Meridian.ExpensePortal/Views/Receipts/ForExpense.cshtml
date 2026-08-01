@@ -1,0 +1,46 @@
+@model List<ReceiptDto>
+@{ var expenseId = (Guid)ViewBag.ExpenseId; }
+
+<h1>Receipts</h1>
+
+@if (TempData["Error"] is string error)
+{
+    <div class="alert">@error</div>
+}
+
+<div class="card">
+    @if (Model.Count == 0)
+    {
+        <p class="empty-state">No receipts uploaded yet.</p>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr><th>File</th><th>Uploaded</th><th></th></tr>
+            </thead>
+            <tbody>
+            @foreach (var receipt in Model)
+            {
+                <tr>
+                    <td>@receipt.FileName</td>
+                    <td>@receipt.UploadedAt.ToString("g")</td>
+                    <td>
+                        <a asp-controller="Receipts" asp-action="Download"
+                           asp-route-receiptId="@receipt.Id" asp-route-expenseId="@expenseId">Download</a>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+</div>
+
+<h3>Upload a receipt</h3>
+<div class="card">
+    <form method="post" asp-controller="Receipts" asp-action="Upload" enctype="multipart/form-data">
+        <input type="hidden" name="expenseId" value="@expenseId" />
+        <div class="field"><label>File</label><input type="file" name="file" accept=".png,.jpg,.jpeg,.pdf,image/png,image/jpeg,application/pdf" /></div>
+        <button type="submit">Upload</button>
+    </form>
+</div>
