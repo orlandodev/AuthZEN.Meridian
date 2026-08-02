@@ -70,9 +70,9 @@ public static class Config
             // Adjust to the portal's Aspire-assigned URL, or use a fixed dev port.
             RedirectUris = { 
                 "https://localhost:59577/signin-oidc", 
-                "https://localhost:59575/scalar/v1", 
-                "https://localhost:59576/scalar/v1", 
-                "https://localhost:59578/scalar/v1" },
+                "https://localhost:59575/scalar/", 
+                "https://localhost:59576/scalar/", 
+                "https://localhost:59578/scalar/" },
             PostLogoutRedirectUris = { "https://localhost:59577/signout-callback-oidc" },
             AllowedScopes =
             {
