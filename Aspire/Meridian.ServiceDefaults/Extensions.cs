@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
@@ -81,14 +83,25 @@ public static class Extensions
         return builder;
     }
 
+    // Aspire service-discovery lookup shared by every method below that talks to
+    // IdentityServer. Deliberately non-throwing and possibly-null: a
+    // WebApplicationFactory-based test host (no identityserver resource
+    // registered) must still be able to build the app. JwtBearer tolerates a
+    // null Authority (it's only read at token-validation time), and the
+    // OpenAPI methods only interpolate this into a URL lazily inside a
+    // document transformer, evaluated solely if something actually requests
+    // the OpenAPI document — so a null here is safe to defer, not fail on.
+    private static string? GetIdentityServerUrl(IConfiguration configuration) =>
+        configuration["services:identityserver:https:0"]
+            ?? configuration["services:identityserver:http:0"];
+
     // Shared JWT-bearer wiring for every Meridian API validating tokens issued by
     // the Duende IdentityServer. Resolves the Authority via Aspire service discovery.
     public static TBuilder AddMeridianApiAuthentication<TBuilder>(
         this TBuilder builder, string audience = "meridian.api")
         where TBuilder : IHostApplicationBuilder
     {
-        var identityServerUrl = builder.Configuration["services:identityserver:https:0"]
-            ?? builder.Configuration["services:identityserver:http:0"];
+        var identityServerUrl = GetIdentityServerUrl(builder.Configuration);
 
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
@@ -107,11 +120,8 @@ public static class Extensions
     public static TBuilder AddMeridianOpenApi<TBuilder>(this TBuilder builder)
         where TBuilder : IHostApplicationBuilder
     {
-        var identityServerUrl = builder.Configuration["services:identityserver:https:0"]
-            ?? builder.Configuration["services:identityserver:http:0"];
-
         builder.Services.AddOpenApiWithAuth(
-            authority: identityServerUrl!,
+            authority: GetIdentityServerUrl(builder.Configuration)!,
             scopes: new Dictionary<string, string>
             {
                 { "meridian.reporting.api", "Meridian Reporting API" },
@@ -138,6 +148,63 @@ public static class Extensions
                 }));
         }
         return app;
+    }
+
+    // Client-credentials counterpart to AddMeridianOpenApi, for services with no
+    // user-delegated caller — e.g. the PDP, called by PEPs authenticating as themselves.
+    public static TBuilder AddMeridianOpenApiClientCredentials<TBuilder>(this TBuilder builder)
+        where TBuilder : IHostApplicationBuilder
+    {
+        builder.Services.AddOpenApiWithClientCredentialsAuth(
+            authority: GetIdentityServerUrl(builder.Configuration)!,
+            scopes: new Dictionary<string, string>
+            {
+                { "pdp.evaluate", "Meridian PDP evaluation" }
+            });
+        return builder;
+    }
+
+    // Client-credentials counterpart to MapMeridianOpenApi. Scalar's interactive "Try it"
+    // login uses the shared "meridian.pep" dev client (see IdentityServer's Config.cs) —
+    // the same client-credentials grant real PEP callers use, so testing via Scalar
+    // exercises the actual auth path instead of a stand-in for it.
+    // DEV SECRET, hardcoded — this surface is Development-only (guarded below) and the
+    // secret is already documented as dev-only where the client is registered.
+    public static WebApplication MapMeridianOpenApiClientCredentials(this WebApplication app, Dictionary<string, string> oauthScopes)
+    {
+        if (app.Environment.IsDevelopment())
+        {
+            app.MapOpenApi();
+            app.MapScalarApiReference(options => options
+                .AddPreferredSecuritySchemes("oauth2", "Meridian OAuth2")
+                .AddClientCredentialsFlow("oauth2", flow =>
+                {
+                    flow.ClientId = "meridian.pep";
+                    flow.ClientSecret = "pep-dev-secret";
+                    flow.SelectedScopes = [.. oauthScopes.Keys];
+                }));
+        }
+        return app;
+    }
+
+    // Every Meridian service's startup runs this once against its own DbContext:
+    // real (Npgsql) databases get migrated, but a WebApplicationFactory-based test
+    // that swaps in the InMemory provider can't run migrations (InMemory doesn't
+    // support Migrate()), so it falls back to EnsureCreated() instead. HasData
+    // seeding is honored by both providers via their respective paths.
+    public static async Task MigrateOrEnsureCreatedAsync<TContext>(this IServiceProvider services)
+        where TContext : DbContext
+    {
+        using var scope = services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<TContext>();
+        if (db.Database.IsRelational())
+        {
+            await db.Database.MigrateAsync();
+        }
+        else
+        {
+            await db.Database.EnsureCreatedAsync();
+        }
     }
 
     public static WebApplication MapDefaultEndpoints(this WebApplication app)

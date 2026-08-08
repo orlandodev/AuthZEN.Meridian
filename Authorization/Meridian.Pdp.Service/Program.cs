@@ -1,10 +1,15 @@
-using AuthZen.Contracts;
-using Meridian.Pdp.Service;
+using Meridian.DataAccess.PdP;
+using Meridian.Pdp.Service.Endpoints;
+using Meridian.Pdp.Service.Pdp;
 using Meridian.ServiceDefaults;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
-builder.Services.AddSingleton<IPolicyEngine, StubPolicyEngine>();
+builder.AddMeridianOpenApiClientCredentials();
+
+// EF Core against the Aspire-provisioned Postgres database "policydb".
+builder.AddNpgsqlDbContext<PolicyDbContext>("policydb");
+builder.Services.AddScoped<IPolicyEngine, PolicyRulesEngine>();
 
 // Callers here are PEPs (the Expenses/Receipts/Reporting APIs), not end
 // users — they authenticate as themselves via client credentials (see the
@@ -18,37 +23,22 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 app.MapDefaultEndpoints();
+app.MapMeridianOpenApiClientCredentials(new Dictionary<string, string>
+{
+    { "pdp.evaluate", "Meridian PDP evaluation" }
+});
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapAuthZenEndpoints();
 
-// Metadata discovery stays anonymous — same convention as OIDC/.well-known
-// discovery documents generally. Nothing sensitive lives here.
-app.MapGet("/.well-known/authzen-configuration", (HttpContext ctx) =>
-{
-    var baseUrl = $"{ctx.Request.Scheme}://{ctx.Request.Host}";
-    return Results.Ok(new
-    {
-        policy_decision_point = baseUrl,
-        access_evaluation_endpoint = $"{baseUrl}/access/v1/evaluation",
-        access_evaluations_endpoint = $"{baseUrl}/access/v1/evaluations"
-    });
-});
-
-// Single decision.
-app.MapPost("/access/v1/evaluation",
-    (AccessEvaluationRequest request, IPolicyEngine engine) =>
-        Results.Ok(new AccessEvaluationResponse { Decision = engine.Evaluate(request) }))
-    .RequireAuthorization();
-
-// Boxcarred / batch decisions.
-app.MapPost("/access/v1/evaluations",
-    (AccessEvaluationsRequest request, IPolicyEngine engine) =>
-    {
-        var results = request.Evaluations
-            .Select(e => new AccessEvaluationResponse { Decision = engine.Evaluate(e) })
-            .ToList();
-        return Results.Ok(new AccessEvaluationsResponse { Evaluations = results });
-    })
-    .RequireAuthorization();
+await app.Services.MigrateOrEnsureCreatedAsync<PolicyDbContext>();
 
 app.Run();
+
+// Top-level statements generate an internal Program class by default,
+// invisible outside this assembly. Re-opening it as public here lets
+// Meridian.UnitTests (PdpApiFactory) use WebApplicationFactory<Program> to
+// host this app's real startup pipeline (DI, middleware, endpoints)
+// in-process for integration tests — the standard pattern for testing
+// minimal APIs written with top-level statements.
+public partial class Program;
