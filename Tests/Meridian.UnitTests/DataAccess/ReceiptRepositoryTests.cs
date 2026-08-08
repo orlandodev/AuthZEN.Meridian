@@ -1,5 +1,5 @@
-using Meridian.DataAccess;
 using Meridian.DataAccess.Models;
+using Meridian.DataAccess.Receipts;
 using Microsoft.EntityFrameworkCore;
 
 namespace Meridian.UnitTests.DataAccess;

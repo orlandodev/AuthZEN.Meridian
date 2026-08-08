@@ -12,11 +12,23 @@
     <PackageReference Include="Moq" />
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Apps\Meridian.ExpensePortal\Meridian.ExpensePortal.csproj" />
     <ProjectReference Include="..\..\Aspire\Meridian.ServiceDefaults\Meridian.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\Authorization\AuthZen.Contracts\AuthZen.Contracts.csproj" />
+    <!-- "global" keeps normal unqualified access to Meridian.Pdp.Service's types
+         (RulesEngineTests.cs etc. use PolicyRulesEngine/RulePrimitives directly);
+         "PdpServiceAssembly" additionally lets PdpApiFactory.cs disambiguate this
+         assembly's Program class via `extern alias PdpServiceAssembly;` +
+         `PdpServiceAssembly::Program`, since it collides unqualified with the
+         top-level-statement Program classes in Meridian.ExpensePortal/Expenses.Api/etc.,
+         also referenced by this project. -->
+    <ProjectReference Include="..\..\Authorization\Meridian.Pdp.Service\Meridian.Pdp.Service.csproj">
+      <Aliases>global,PdpServiceAssembly</Aliases>
+    </ProjectReference>
     <ProjectReference Include="..\..\Common\Meridian.DataAccess\Meridian.DataAccess.csproj" />
     <ProjectReference Include="..\..\Common\Meridian.Services\Meridian.Services.csproj" />
     <ProjectReference Include="..\..\Services\Meridian.Expenses.Api\Meridian.Expenses.Api.csproj" />

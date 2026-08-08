@@ -38,6 +38,7 @@ var identity = builder.AddProject<Projects.Meridian_IdentityServer>("identityser
 var pdp = builder.AddProject<Projects.Meridian_Pdp_Service>("pdp")
                  .WithUrlForEndpoint("https", url => url.DisplayText = "Policy Decision Point")
                  .WithReference(policyDb)
+                 .WithReference(identity)
                  .WaitFor(policyDb);
 
 // --- Enforcement points (Stage 0: no PDP reference yet) ---

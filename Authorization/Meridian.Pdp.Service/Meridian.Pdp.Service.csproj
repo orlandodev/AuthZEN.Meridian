@@ -1,8 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <!-- Direct reference required, not just transitive via Meridian.ServiceDefaults:
+         this package's own build-time .targets (wiring the InterceptorsNamespaces
+         MSBuild property its XML-comment source generator needs) only applies to
+         projects that reference it directly. Every other Meridian API already has
+         this reference for the same reason. -->
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Microsoft.OpenApi" />
+    <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" />
     <ProjectReference Include="..\..\Aspire\Meridian.ServiceDefaults\Meridian.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\Common\Meridian.DataAccess\Meridian.DataAccess.csproj" />
     <ProjectReference Include="..\AuthZen.Contracts\AuthZen.Contracts.csproj" />
   </ItemGroup>
 </Project>

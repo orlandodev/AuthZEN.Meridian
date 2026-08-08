@@ -1,8 +1,10 @@
 using Meridian.DataAccess;
+using Meridian.DataAccess.Receipts;
 using Meridian.Receipts.Api.Authorization;
 using Meridian.Receipts.Api.Endpoints;
 using Meridian.ServiceDefaults;
 using Meridian.Services;
+using Meridian.Services.Contracts;
 using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -39,11 +41,13 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapReceiptEndpoints();
 
+await app.Services.MigrateOrEnsureCreatedAsync<ReceiptsDbContext>();
+
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ReceiptsDbContext>();
     var blobStorage = scope.ServiceProvider.GetRequiredService<IReceiptBlobStorage>();
-    await ReceiptsSeedData.EnsureSeededAsync(db, blobStorage);
+    await ReceiptBlobContentSeeder.EnsureBlobContentAsync(db, blobStorage);
 }
 
 app.Run();

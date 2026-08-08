@@ -1,70 +1,42 @@
-using Meridian.DataAccess;
-using Meridian.DataAccess.Models;
+using Meridian.DataAccess.Receipts;
 using Microsoft.EntityFrameworkCore;
 
 namespace Meridian.UnitTests.DataAccess;
 
+// The 2 Receipt rows are now seeded via ReceiptsDbContext's HasData (baked
+// into the InitialCreate migration) with a fixed placeholder BlobUri —
+// HasData can't call the async blob upload. ReceiptBlobContentSeeder runs at
+// service startup to upload real placeholder content and fill in BlobUri;
+// see ReceiptBlobContentSeederTests below for that half.
 public class ReceiptsSeedDataTests
 {
-    private static ReceiptsDbContext CreateContext() =>
-        new(new DbContextOptionsBuilder<ReceiptsDbContext>()
+    private static ReceiptsDbContext CreateSeededContext()
+    {
+        var db = new ReceiptsDbContext(new DbContextOptionsBuilder<ReceiptsDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options);
-
-    private static Mock<IReceiptBlobStorage> CreateBlobStorage()
-    {
-        var mock = new Mock<IReceiptBlobStorage>();
-        mock.Setup(b => b.UploadAsync(It.IsAny<string>(), It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync("https://blobs.test/receipts/seed");
-        return mock;
+        db.Database.EnsureCreated();
+        return db;
     }
 
     [Fact]
-    public async Task EnsureSeededAsync_SeedsTwoReceipts_AndWritesAPlaceholderBlobForEach_WhenDatabaseIsEmpty()
+    public async Task Seed_HasTwoReceipts()
     {
-        using var db = CreateContext();
-        var blobStorage = CreateBlobStorage();
-
-        await ReceiptsSeedData.EnsureSeededAsync(db, blobStorage.Object);
+        using var db = CreateSeededContext();
 
         var receipts = await db.Receipts.ToListAsync();
+
         receipts.Should().HaveCount(2);
         receipts.Should().OnlyContain(r => r.Id != Guid.Empty);
-        receipts.Should().OnlyContain(r => !string.IsNullOrWhiteSpace(r.BlobUri));
-        blobStorage.Verify(
-            b => b.UploadAsync(It.IsAny<string>(), It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
-            Times.Exactly(2));
     }
 
     [Fact]
-    public async Task EnsureSeededAsync_DoesNotDuplicateSeed_WhenCalledTwice()
+    public async Task Seed_OwnerIdsMatchTestUsers()
     {
-        using var db = CreateContext();
-        var blobStorage = CreateBlobStorage();
-        await ReceiptsSeedData.EnsureSeededAsync(db, blobStorage.Object);
+        using var db = CreateSeededContext();
 
-        await ReceiptsSeedData.EnsureSeededAsync(db, blobStorage.Object);
+        var ownerIds = (await db.Receipts.ToListAsync()).Select(r => r.OwnerUserId).Distinct();
 
-        (await db.Receipts.CountAsync()).Should().Be(2);
-    }
-
-    [Fact]
-    public async Task EnsureSeededAsync_DoesNotSeed_OrTouchBlobStorage_WhenDatabaseAlreadyHasData()
-    {
-        using var db = CreateContext();
-        db.Receipts.Add(new Receipt
-        {
-            Id = Guid.NewGuid(),
-            ExpenseId = Guid.NewGuid(),
-            OwnerUserId = "u-existing",
-            BlobUri = "https://blobs.test/receipts/existing",
-            ContentType = "text/plain"
-        });
-        await db.SaveChangesAsync();
-        var blobStorage = new Mock<IReceiptBlobStorage>(MockBehavior.Strict);
-
-        await ReceiptsSeedData.EnsureSeededAsync(db, blobStorage.Object);
-
-        (await db.Receipts.CountAsync()).Should().Be(1);
+        ownerIds.Should().BeEquivalentTo(["u-emma", "u-mateo"]);
     }
 }

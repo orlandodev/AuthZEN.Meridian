@@ -1,6 +1,7 @@
 using Azure;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
+using Meridian.DataAccess.Receipts;
 
 namespace Meridian.DataAccess;
 
