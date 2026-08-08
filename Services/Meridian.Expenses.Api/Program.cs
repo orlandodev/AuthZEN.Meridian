@@ -1,8 +1,9 @@
-using Meridian.DataAccess;
+using Meridian.DataAccess.Expenses;
 using Meridian.Expenses.Api.Authorization;
 using Meridian.Expenses.Api.Endpoints;
 using Meridian.ServiceDefaults;
 using Meridian.Services;
+using Meridian.Services.Contracts;
 using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -43,10 +44,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapExpenseEndpoints();
 
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<ExpensesDbContext>();
-    await ExpensesSeedData.EnsureSeededAsync(db);
-}
+await app.Services.MigrateOrEnsureCreatedAsync<ExpensesDbContext>();
 
 app.Run();

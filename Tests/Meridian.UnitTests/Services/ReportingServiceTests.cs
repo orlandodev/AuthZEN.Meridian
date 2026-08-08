@@ -1,5 +1,5 @@
-using Meridian.DataAccess;
 using Meridian.DataAccess.Models;
+using Meridian.DataAccess.Reporting;
 using Meridian.Services;
 
 namespace Meridian.UnitTests.Services;

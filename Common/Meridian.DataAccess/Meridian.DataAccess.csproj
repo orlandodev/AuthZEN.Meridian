@@ -2,6 +2,16 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <!-- Pinned directly (not just transitively via Npgsql.EntityFrameworkCore.PostgreSQL,
+         whose nuspec only floors it at 10.0.4) so it resolves to the same 10.0.8 as
+         Microsoft.EntityFrameworkCore everywhere this project is referenced, avoiding an
+         MSB3277 version-conflict warning downstream. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Azure.Storage.Blobs" />
   </ItemGroup>
 

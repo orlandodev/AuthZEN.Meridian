@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using Meridian.Reporting.Api.Authorization;
 using Meridian.Services;
+using Meridian.Services.Contracts;
 using Meridian.Services.DTOs;
 
 namespace Meridian.Reporting.Api.Endpoints;

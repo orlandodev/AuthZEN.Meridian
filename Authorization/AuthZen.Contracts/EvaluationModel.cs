@@ -61,7 +61,7 @@ public sealed record AccessEvaluationsRequest
     [JsonPropertyName("action")] public AuthZenAction? Action { get; init; }
     [JsonPropertyName("resource")] public Resource? Resource { get; init; }
     [JsonPropertyName("context")] public Dictionary<string, object>? Context { get; init; }
-    [JsonPropertyName("evaluations")] public required IReadOnlyList<AccessEvaluationRequest> Evaluations { get; init; }
+    [JsonPropertyName("evaluations")] public required IReadOnlyList<EvaluationEntry> Evaluations { get; init; }
 }
 
 public sealed record AccessEvaluationsResponse
