@@ -1,4 +1,3 @@
-using Duende.IdentityModel;
 // NOTE: the .Sha256() string extension used below comes from this package.
 using Duende.IdentityServer.Models;
 
@@ -98,7 +97,13 @@ public static class Config
             ClientName = "Meridian Policy Enforcement Points",
             AllowedGrantTypes = GrantTypes.ClientCredentials,
             ClientSecrets = { new Secret("pep-dev-secret".Sha256()) },
-            AllowedScopes = { "pdp.evaluate" }
+            AllowedScopes = { "pdp.evaluate" },
+            // Real PEP callers are server-to-server and never hit this — only
+            // Scalar's interactive "Try it" on the PDP's own Scalar page does,
+            // posting to /connect/token directly from the browser. Adjust to
+            // the PDP's Aspire-assigned URL, or use a fixed dev port (see
+            // Meridian.Pdp.Service/Properties/launchSettings.json).
+            AllowedCorsOrigins = { "https://localhost:59580" }
         }
     ];
 }

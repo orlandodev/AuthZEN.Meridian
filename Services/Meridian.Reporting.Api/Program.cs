@@ -1,8 +1,9 @@
-using Meridian.DataAccess;
+using Meridian.DataAccess.Reporting;
 using Meridian.Reporting.Api.Authorization;
 using Meridian.Reporting.Api.Endpoints;
 using Meridian.ServiceDefaults;
 using Meridian.Services;
+using Meridian.Services.Contracts;
 
 // Reporting API skeleton. Stage 0: authenticated but not yet a PEP. In Stage 4 this
 // service gains AuthZen.Pep and delegates every decision to the shared PDP,
@@ -37,10 +38,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapReportingEndpoints();
 
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<ReportingDbContext>();
-    await ReportingSeedData.EnsureSeededAsync(db, TimeProvider.System);
-}
+await app.Services.MigrateOrEnsureCreatedAsync<ReportingDbContext>();
 
 app.Run();

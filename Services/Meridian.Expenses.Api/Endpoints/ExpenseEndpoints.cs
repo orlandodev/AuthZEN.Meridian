@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Meridian.DataAccess.Models;
 using Meridian.Expenses.Api.Authorization;
 using Meridian.Services;
+using Meridian.Services.Contracts;
 using Meridian.Services.DTOs;
 using Microsoft.AspNetCore.Authorization;
 

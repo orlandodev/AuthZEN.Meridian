@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Meridian.Receipts.Api.Authorization;
 using Meridian.Services;
+using Meridian.Services.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

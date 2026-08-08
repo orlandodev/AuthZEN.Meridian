@@ -25,4 +25,44 @@ public class ContractShapeTests
         Assert.Contains("\"action\"", json);
         Assert.Contains("\"resource\"", json);
     }
+
+    [Fact]
+    public void EvaluationsRequest_Serializes_ToSarcBoxcarShape()
+    {
+        // Mirrors the spec's boxcar example: top-level subject/action are
+        // defaults, and entries only carry what they override (typically
+        // just resource) — see AuthZEN 1.0 section 7.1.1.
+        var batch = new AccessEvaluationsRequest
+        {
+            Subject = new Subject { Type = "user", Id = "u-emma" },
+            Action = new AuthZenAction { Name = "can_read" },
+            Evaluations =
+            [
+                new EvaluationEntry { Resource = new Resource { Type = "document", Id = "boxcarring.md" } },
+                new EvaluationEntry { Resource = new Resource { Type = "document", Id = "subject-search.md" } }
+            ]
+        };
+
+        var json = JsonSerializer.Serialize(batch);
+
+        Assert.Contains("\"subject\"", json);
+        Assert.Contains("\"action\"", json);
+        Assert.Contains("\"evaluations\"", json);
+        Assert.DoesNotContain("\"ownerId\"", json);
+        // Entries omit subject/action entirely — no stray nulls in the wire shape.
+        var evaluationsJson = JsonSerializer.Serialize(batch.Evaluations[0]);
+        Assert.DoesNotContain("\"subject\"", evaluationsJson);
+        Assert.DoesNotContain("\"action\"", evaluationsJson);
+    }
+
+    [Fact]
+    public void EvaluationResponse_WithoutContext_OmitsContextField()
+    {
+        var response = new AccessEvaluationResponse { Decision = true };
+
+        var json = JsonSerializer.Serialize(response);
+
+        Assert.Contains("\"decision\"", json);
+        Assert.DoesNotContain("\"context\"", json);
+    }
 }

@@ -1,4 +1,4 @@
-using Meridian.DataAccess;
+using Meridian.DataAccess.Expenses;
 using Meridian.DataAccess.Models;
 using Microsoft.EntityFrameworkCore;
 

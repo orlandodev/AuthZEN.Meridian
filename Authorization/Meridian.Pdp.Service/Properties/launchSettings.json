@@ -3,7 +3,7 @@
     "Meridian.Pdp.Service": {
       "commandName": "Project",
       "launchBrowser": true,
-      "launchUrl": ".well-known/authzen-configuration",
+      "launchUrl": "scalar",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },

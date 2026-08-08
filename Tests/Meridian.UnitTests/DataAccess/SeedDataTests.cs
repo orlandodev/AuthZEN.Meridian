@@ -1,56 +1,42 @@
-using Meridian.DataAccess;
-using Meridian.DataAccess.Models;
+using Meridian.DataAccess.Expenses;
 using Microsoft.EntityFrameworkCore;
 
 namespace Meridian.UnitTests.DataAccess;
 
+// Expenses are now seeded via ExpensesDbContext's OnModelCreating HasData,
+// baked into the InitialCreate migration — not an imperative EnsureSeededAsync
+// call. EF InMemory + EnsureCreated() applies HasData the same way
+// Migrate() does against a real Postgres database, so this exercises the
+// exact same seed rows.
 public class SeedDataTests
 {
-    private static ExpensesDbContext CreateContext() =>
-        new(new DbContextOptionsBuilder<ExpensesDbContext>()
+    private static ExpensesDbContext CreateSeededContext()
+    {
+        var db = new ExpensesDbContext(new DbContextOptionsBuilder<ExpensesDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options);
+        db.Database.EnsureCreated();
+        return db;
+    }
 
     [Fact]
-    public async Task EnsureSeededAsync_SeedsThreeExpenses_WhenDatabaseIsEmpty()
+    public async Task Seed_HasThreeExpenses()
     {
-        using var db = CreateContext();
-
-        await ExpensesSeedData.EnsureSeededAsync(db);
+        using var db = CreateSeededContext();
 
         var expenses = await db.Expenses.ToListAsync();
+
         expenses.Should().HaveCount(3);
         expenses.Should().OnlyContain(e => e.Id != Guid.Empty);
     }
 
     [Fact]
-    public async Task EnsureSeededAsync_DoesNotDuplicateSeed_WhenCalledTwice()
+    public async Task Seed_OwnerIdsMatchTestUsers()
     {
-        using var db = CreateContext();
-        await ExpensesSeedData.EnsureSeededAsync(db);
+        using var db = CreateSeededContext();
 
-        await ExpensesSeedData.EnsureSeededAsync(db);
+        var ownerIds = (await db.Expenses.ToListAsync()).Select(e => e.OwnerUserId).Distinct();
 
-        (await db.Expenses.CountAsync()).Should().Be(3);
-    }
-
-    [Fact]
-    public async Task EnsureSeededAsync_DoesNotSeed_WhenDatabaseAlreadyHasData()
-    {
-        using var db = CreateContext();
-        db.Expenses.Add(new Expense
-        {
-            Id = Guid.NewGuid(),
-            OwnerUserId = "u-existing",
-            Department = "Ops",
-            Amount = 10m,
-            Category = "Existing",
-            Status = ExpenseStatus.Draft
-        });
-        await db.SaveChangesAsync();
-
-        await ExpensesSeedData.EnsureSeededAsync(db);
-
-        (await db.Expenses.CountAsync()).Should().Be(1);
+        ownerIds.Should().BeEquivalentTo(["u-emma", "u-mateo"]);
     }
 }
