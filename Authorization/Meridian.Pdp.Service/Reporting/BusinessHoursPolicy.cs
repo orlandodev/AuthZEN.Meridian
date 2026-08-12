@@ -1,14 +1,10 @@
 namespace Meridian.Pdp.Service.Reporting;
 
 // Mirrors Meridian.Reporting.Api's BusinessHoursPolicy (same Mon-Fri,
-// 9am-5pm UTC window) — duplicated rather than referenced, since the PDP is
-// meant to stay a standalone, swappable component with no ProjectReference
-// back to any PEP. Evaluated against the PDP's own TimeProvider, not a
-// caller-supplied context value: unlike the amount-limit check (which needs
-// transaction-specific data only the caller has), "what time is it right
-// now" is something the PDP can determine on its own — trusting a
-// caller-supplied timestamp here would let a dishonest or buggy PEP bypass
-// the restriction outright.
+// 9am-5pm UTC window) — duplicated, not referenced, since the PDP stays a
+// standalone component with no dependency back to any PEP. Evaluated
+// against the PDP's own TimeProvider, not a caller-supplied value: a
+// dishonest or buggy PEP could otherwise bypass this by lying about the time.
 public static class BusinessHoursPolicy
 {
     private static readonly TimeOnly OpensAt = new(9, 0);

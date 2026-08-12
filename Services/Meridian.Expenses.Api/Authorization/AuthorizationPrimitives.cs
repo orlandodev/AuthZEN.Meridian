@@ -1,3 +1,4 @@
+using Meridian.DataAccess.Models;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Meridian.Expenses.Api.Authorization;
@@ -9,12 +10,14 @@ public static class Policies
 }
 
 // ---- Resource-based ownership: an employee may act on their own expense ----
+// Delegated to the PDP as ("expense", "read") — see OwnerOrPrivilegedHandler.
 public sealed class OwnerOrPrivilegedRequirement : IAuthorizationRequirement;
 
-// ---- Amount-based approval limit, department-scoped for managers ----
-public sealed class ApprovalRequirement : IAuthorizationRequirement;
-
-public static class ApprovalRules
+// ---- Approve/reject decision, delegated to the PDP as ("expense", "approve"|"reject") ----
+// Carries the caller's intended outcome so the handler knows which PDP action
+// to evaluate; the amount limit itself now lives in the PDP's policy database
+// (PolicyConstants.AmountLimitKeys.ExpenseApproveManagerLimit), not here.
+public sealed class ApprovalRequirement(ExpenseStatus desiredStatus) : IAuthorizationRequirement
 {
-    public const decimal ManagerLimit = 5000m;
+    public ExpenseStatus DesiredStatus { get; } = desiredStatus;
 }

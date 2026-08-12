@@ -9,15 +9,12 @@ public class ReceiptsDbContext(DbContextOptions<ReceiptsDbContext> options) : Db
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // BlobUri is a placeholder here ("seed-pending") because the real
-        // blob URI is only known at runtime (it embeds the Azurite/Storage
-        // host:port, which doesn't exist at migration-authoring time). See
-        // ReceiptBlobContentSeeder, run from Program.cs at startup, which
-        // uploads the actual placeholder content and updates BlobUri by
-        // these fixed ids. ExpenseId values are fixed illustrative GUIDs,
-        // NOT foreign keys into Expenses.Api's database: Receipts.Api and
-        // Expenses.Api are separate services/databases with no referential
-        // integrity between them.
+        // BlobUri is a placeholder ("seed-pending") since the real URI is
+        // only known at runtime (it embeds the Azurite host:port). See
+        // ReceiptBlobContentSeeder, run at startup, which fills it in by
+        // these fixed ids. ExpenseId values are illustrative GUIDs, not real
+        // foreign keys — Receipts.Api and Expenses.Api are separate
+        // databases with no referential integrity between them.
         modelBuilder.Entity<Receipt>().HasData(
             new Receipt
             {

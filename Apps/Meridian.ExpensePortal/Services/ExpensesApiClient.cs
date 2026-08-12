@@ -8,11 +8,10 @@ namespace Meridian.ExpensePortal.Services;
 // AddUserAccessTokenHandler() (registered as a DelegatingHandler in Program.cs),
 // so this class only knows about the Expenses API's shape — not about auth.
 //
-// NOTE ON JSON CASING: minimal APIs serialize with JsonSerializerDefaults.Web
-// (camelCase) automatically, but HttpClient's *deserializer* does NOT use that
-// by default — it's case-sensitive unless told otherwise. Forgetting this is a
-// classic "why is everything null" bug, so it's made explicit here rather than
-// left as global config.
+// Minimal APIs serialize with JsonSerializerDefaults.Web (camelCase)
+// automatically, but HttpClient's deserializer is case-sensitive by default —
+// JsonOptions is passed explicitly to every call below rather than left as
+// global config.
 public sealed class ExpensesApiClient(HttpClient http)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);

@@ -30,7 +30,25 @@ public static class Extensions
             http.AddServiceDiscovery();
         });
 
+        // Registered for every service, but only wired into the pipeline by
+        // UseApiExceptionHandling() below — the MVC portal never calls that,
+        // so it renders its own error views instead.
+        builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+        builder.Services.AddProblemDetails(options =>
+        {
+            options.CustomizeProblemDetails = context =>
+                context.ProblemDetails.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+        });
+
         return builder;
+    }
+
+    // Call first, right after builder.Build(), on every JSON API so it wraps
+    // every other middleware and catches whatever's downstream.
+    public static WebApplication UseApiExceptionHandling(this WebApplication app)
+    {
+        app.UseExceptionHandler();
+        return app;
     }
 
     public static TBuilder ConfigureOpenTelemetry<TBuilder>(this TBuilder builder)
@@ -83,14 +101,11 @@ public static class Extensions
         return builder;
     }
 
-    // Aspire service-discovery lookup shared by every method below that talks to
-    // IdentityServer. Deliberately non-throwing and possibly-null: a
-    // WebApplicationFactory-based test host (no identityserver resource
-    // registered) must still be able to build the app. JwtBearer tolerates a
-    // null Authority (it's only read at token-validation time), and the
-    // OpenAPI methods only interpolate this into a URL lazily inside a
-    // document transformer, evaluated solely if something actually requests
-    // the OpenAPI document — so a null here is safe to defer, not fail on.
+    // Aspire service-discovery lookup shared by every method below that talks
+    // to IdentityServer. Deliberately non-throwing and possibly-null: a test
+    // host with no identityserver resource registered must still build —
+    // JwtBearer tolerates a null Authority, and the OpenAPI methods only
+    // resolve this lazily, when something actually requests the document.
     private static string? GetIdentityServerUrl(IConfiguration configuration) =>
         configuration["services:identityserver:https:0"]
             ?? configuration["services:identityserver:http:0"];
@@ -117,7 +132,7 @@ public static class Extensions
     // Opt-in OpenAPI + Scalar UI for services that expose an HTTP API. Not part of
     // AddServiceDefaults/MapDefaultEndpoints since not every Meridian service (e.g. the
     // MVC portal, IdentityServer) has an API document to publish.
-    public static TBuilder AddMeridianOpenApi<TBuilder>(this TBuilder builder)
+    public static TBuilder AddMeridianOpenApi<TBuilder>(this TBuilder builder, string title, string description)
         where TBuilder : IHostApplicationBuilder
     {
         builder.Services.AddOpenApiWithAuth(
@@ -127,7 +142,9 @@ public static class Extensions
                 { "meridian.reporting.api", "Meridian Reporting API" },
                 { "meridian.expenses.api", "Meridian Expenses API" },
                 { "meridian.receipts.api", "Meridian Receipts API" }
-            });
+            },
+            title: title,
+            description: description);
         return builder;
     }
 
@@ -152,7 +169,8 @@ public static class Extensions
 
     // Client-credentials counterpart to AddMeridianOpenApi, for services with no
     // user-delegated caller — e.g. the PDP, called by PEPs authenticating as themselves.
-    public static TBuilder AddMeridianOpenApiClientCredentials<TBuilder>(this TBuilder builder)
+    public static TBuilder AddMeridianOpenApiClientCredentials<TBuilder>(
+        this TBuilder builder, string title, string description)
         where TBuilder : IHostApplicationBuilder
     {
         builder.Services.AddOpenApiWithClientCredentialsAuth(
@@ -160,7 +178,9 @@ public static class Extensions
             scopes: new Dictionary<string, string>
             {
                 { "pdp.evaluate", "Meridian PDP evaluation" }
-            });
+            },
+            title: title,
+            description: description);
         return builder;
     }
 
@@ -187,11 +207,9 @@ public static class Extensions
         return app;
     }
 
-    // Every Meridian service's startup runs this once against its own DbContext:
-    // real (Npgsql) databases get migrated, but a WebApplicationFactory-based test
-    // that swaps in the InMemory provider can't run migrations (InMemory doesn't
-    // support Migrate()), so it falls back to EnsureCreated() instead. HasData
-    // seeding is honored by both providers via their respective paths.
+    // Real (Npgsql) databases get migrated; a test host on the InMemory
+    // provider falls back to EnsureCreated() instead, since InMemory doesn't
+    // support Migrate(). HasData seeding works either way.
     public static async Task MigrateOrEnsureCreatedAsync<TContext>(this IServiceProvider services)
         where TContext : DbContext
     {

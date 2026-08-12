@@ -30,6 +30,22 @@ public static class RequestFactory
                 : new Dictionary<string, object> { ["amount"] = contextAmount.Value }
         };
 
+    public static AccessEvaluationRequest ExpenseCreateRequest(string subjectId, string ownerId, string department) =>
+        new()
+        {
+            Subject = new Subject { Type = "user", Id = subjectId },
+            Action = new AuthZenAction { Name = "create" },
+            Resource = new Resource
+            {
+                Type = "expense",
+                Properties = new Dictionary<string, object>
+                {
+                    ["ownerId"] = ownerId,
+                    ["department"] = department
+                }
+            }
+        };
+
     public static AccessEvaluationRequest ReceiptRequest(string subjectId, string ownerId) =>
         new()
         {

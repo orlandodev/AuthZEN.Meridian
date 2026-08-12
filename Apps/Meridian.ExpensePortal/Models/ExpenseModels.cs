@@ -21,12 +21,13 @@ public sealed record ExpenseDto(
     DateTimeOffset CreatedAt,
     DateTimeOffset? DecidedAt);
 
-// Department is derived server-side from the caller's own claim, not sent by the client.
-// Validation attributes mirror Meridian.Services.DTOs.CreateExpenseRequest so bad input
-// is caught by MVC model binding before the API is even called.
+// Department is derived server-side from the caller's own claim, not sent by
+// the client. Validation attributes target the constructor parameter
+// directly (no `property:` target) — the runtime's record-validation
+// metadata requires that for primary-constructor parameters.
 public sealed record CreateExpenseRequest(
-    [property: Range(typeof(decimal), "0.01", "1000000")] decimal Amount,
-    [property: Required, MaxLength(100)] string Category);
+    [Range(typeof(decimal), "0.01", "1000000")] decimal Amount,
+    [Required, MaxLength(100)] string Category);
 
 // Status is either Approved or Rejected; the API rejects anything else.
 public sealed record UpdateExpenseStatusRequest(ExpenseStatus Status);

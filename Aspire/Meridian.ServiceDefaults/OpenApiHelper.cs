@@ -13,8 +13,8 @@ public static class OpenApiHelper
     /// on behalf of the signed-in user — for APIs a human delegates to via the Portal.
     /// </summary>
     public static IServiceCollection AddOpenApiWithAuth(this IServiceCollection services,
-        string authority, Dictionary<string, string> scopes) =>
-        AddOpenApiWithOAuth(services, scopes, () => new OpenApiOAuthFlows
+        string authority, Dictionary<string, string> scopes, string title, string description) =>
+        AddOpenApiWithOAuth(services, scopes, title, description, () => new OpenApiOAuthFlows
         {
             AuthorizationCode = new OpenApiOAuthFlow
             {
@@ -29,8 +29,8 @@ public static class OpenApiHelper
     /// where the caller authenticates as itself (e.g. a PEP calling the PDP).
     /// </summary>
     public static IServiceCollection AddOpenApiWithClientCredentialsAuth(this IServiceCollection services,
-        string authority, Dictionary<string, string> scopes) =>
-        AddOpenApiWithOAuth(services, scopes, () => new OpenApiOAuthFlows
+        string authority, Dictionary<string, string> scopes, string title, string description) =>
+        AddOpenApiWithOAuth(services, scopes, title, description, () => new OpenApiOAuthFlows
         {
             ClientCredentials = new OpenApiOAuthFlow
             {
@@ -40,20 +40,23 @@ public static class OpenApiHelper
         });
 
     // Shared by both flows above — an "oauth2" security scheme differing only
-    // in which OpenApiOAuthFlow is populated, so the two callers can never
-    // drift on how the scheme/security requirement itself is wired. Takes a
-    // factory, not an already-built OpenApiOAuthFlows: the document
-    // transformer only runs when something actually requests the OpenAPI
-    // document, and building the flows (in particular, parsing `authority`
-    // into a Uri) needs to stay deferred until then too — a test host with
-    // no identityserver configured must still be able to build the app.
+    // in which OpenApiOAuthFlow is populated. Takes a factory rather than an
+    // already-built OpenApiOAuthFlows so that parsing `authority` into a Uri
+    // stays deferred until the document is actually requested — a test host
+    // with no identityserver configured must still be able to build the app.
     private static IServiceCollection AddOpenApiWithOAuth(
-        IServiceCollection services, Dictionary<string, string> scopes, Func<OpenApiOAuthFlows> flowsFactory)
+        IServiceCollection services, Dictionary<string, string> scopes, string title, string description,
+        Func<OpenApiOAuthFlows> flowsFactory)
     {
         services.AddOpenApi(options =>
         {
             options.AddDocumentTransformer((document, _, _) =>
             {
+                // The document-level title/description Scalar renders at the top of
+                // the page, above the per-endpoint list.
+                document.Info.Title = title;
+                document.Info.Description = description;
+
                 document.Components ??= new OpenApiComponents();
                 document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
 

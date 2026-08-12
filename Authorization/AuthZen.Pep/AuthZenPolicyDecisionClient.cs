@@ -1,20 +1,20 @@
 using System.Diagnostics;
-using System.Diagnostics.Metrics;
 using System.Net.Http.Json;
 using AuthZen.Contracts;
 using Microsoft.Extensions.Logging;
 
 namespace AuthZen.Pep;
 
-// HTTP client that speaks the AuthZEN Access Evaluation API and emits
-// OpenTelemetry spans + metrics tagged with the decision. The ActivitySource
-// and Meter names match what ServiceDefaults subscribes to ("Meridian.AuthZen").
+// HTTP client that speaks the AuthZEN Access Evaluation API and emits an
+// OpenTelemetry client span for the outbound call, tagged with the decision.
+// The ActivitySource name matches what ServiceDefaults subscribes to
+// ("Meridian.AuthZen"), so it correlates with the PDP's server-side span for
+// the same call. The "authz.decisions" counter is emitted only by
+// PolicyRulesEngine on the PDP side — the PDP is where a decision is actually
+// made, so it's the single source of truth for that metric
 public sealed class AuthZenPolicyDecisionClient : IPolicyDecisionClient
 {
     public static readonly ActivitySource ActivitySource = new("Meridian.AuthZen");
-    private static readonly Meter Meter = new("Meridian.AuthZen");
-    private static readonly Counter<long> Decisions =
-        Meter.CreateCounter<long>("authz.decisions", description: "Authorization decisions by outcome.");
 
     private readonly HttpClient _http;
     private readonly ILogger<AuthZenPolicyDecisionClient> _logger;
@@ -39,10 +39,6 @@ public sealed class AuthZenPolicyDecisionClient : IPolicyDecisionClient
 
         var decision = result?.Decision ?? false;
         activity?.SetTag("authz.decision", decision ? "permit" : "deny");
-        Decisions.Add(1,
-            new KeyValuePair<string, object?>("decision", decision ? "permit" : "deny"),
-            new KeyValuePair<string, object?>("action", request.Action.Name),
-            new KeyValuePair<string, object?>("resource.type", request.Resource.Type));
 
         return decision;
     }

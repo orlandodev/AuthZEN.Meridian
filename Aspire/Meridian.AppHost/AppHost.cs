@@ -1,7 +1,7 @@
 // Meridian distributed application model.
-// Stage 0: the three APIs still enforce authorization in-process; the PDP is
-// wired up and running but no API depends on it yet. As you progress through
-// the stages you'll add .WithReference(pdp) to each API and the portal.
+// Stage 3: Expenses.Api now depends on the PDP and enforces via PEP. Receipts
+// and Reporting still enforce in-process; add .WithReference(pdp) to each as
+// they convert in later stages.
 
 var builder = DistributedApplication.CreateBuilder(args);
 
@@ -10,6 +10,11 @@ var builder = DistributedApplication.CreateBuilder(args);
 // AddPostgres's implicit generated parameter, which regenerates on every run and drifts
 // out of sync with the credentials already baked into the persisted data volume.
 var postgresPassword = builder.AddParameter("postgres-password", secret: true);
+
+// Client secret for the shared "meridian.pep" client (see IdentityServer's
+// Config.cs) that backend APIs use to authenticate to the PDP via client
+// credentials. Set once in user secrets, same as postgres-password.
+var pepClientSecret = builder.AddParameter("pep-client-secret", secret: true);
 
 var postgres = builder.AddPostgres("postgres", password: postgresPassword)
                       .WithDataVolume()
@@ -41,12 +46,18 @@ var pdp = builder.AddProject<Projects.Meridian_Pdp_Service>("pdp")
                  .WithReference(identity)
                  .WaitFor(policyDb);
 
-// --- Enforcement points (Stage 0: no PDP reference yet) ---
+// --- Enforcement points ---
+// Expenses.Api is a PEP as of Stage 3: it delegates authorization decisions
+// to the PDP instead of enforcing in-process. Receipts and Reporting still
+// enforce in-process until Stage 4.
 var expensesApi = builder.AddProject<Projects.Meridian_Expenses_Api>("expenses-api")
                 .WithUrlForEndpoint("https", url => url.DisplayText = "Expenses API - Scalar")
                 .WithReference(expensesDb)
                 .WithReference(identity)
-                .WaitFor(expensesDb);
+                .WithReference(pdp)
+                .WithEnvironment("Pep__ClientSecret", pepClientSecret)
+                .WaitFor(expensesDb)
+                .WaitFor(pdp);
 
 var receiptsApi = builder.AddProject<Projects.Meridian_Receipts_Api>("receipts-api")
                 .WithUrlForEndpoint("https", url => url.DisplayText = "Receipts API - Scalar")

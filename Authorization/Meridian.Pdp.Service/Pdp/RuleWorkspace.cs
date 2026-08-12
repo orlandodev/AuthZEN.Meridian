@@ -4,12 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Meridian.Pdp.Service.Pdp;
 
-// Per-evaluate-call DB access (with a small subject-profile cache so a
-// boxcarred /access/v1/evaluations request doesn't re-query the same
-// subject's RoleAssignment repeatedly within one HTTP call) plus the other
-// per-request primitives rules need — currently just the clock. Kept
-// domain-agnostic: policy decisions (e.g. what counts as "business hours")
-// live in the *Rules classes, not here.
+// Per-evaluate-call DB access, with a subject-profile cache so a boxcarred
+// request doesn't re-query the same subject repeatedly. Domain-agnostic:
+// policy decisions (e.g. what counts as "business hours") live in the
+// *Rules classes, not here.
 public sealed class RuleWorkspace(PolicyDbContext db, TimeProvider timeProvider)
 {
     private readonly Dictionary<string, RoleAssignment?> _profileCache = new();

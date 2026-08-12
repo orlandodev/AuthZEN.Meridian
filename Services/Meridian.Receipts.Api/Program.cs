@@ -9,7 +9,9 @@ using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
-builder.AddMeridianOpenApi();
+builder.AddMeridianOpenApi(
+    title: "Meridian Receipts API",
+    description: "Upload, list, and download receipt files (PNG, JPEG, or PDF) attached to expenses.");
 
 // EF Core against the Aspire-provisioned Postgres database "receiptsdb".
 builder.AddNpgsqlDbContext<ReceiptsDbContext>("receiptsdb");
@@ -32,6 +34,7 @@ builder.Services.AddSingleton<IReceiptBlobStorage, AzureBlobReceiptStorage>();
 builder.Services.AddScoped<IReceiptService, ReceiptService>();
 
 var app = builder.Build();
+app.UseApiExceptionHandling();
 app.MapDefaultEndpoints();
 app.MapMeridianOpenApi(new Dictionary<string, string>
 {

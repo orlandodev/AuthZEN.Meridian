@@ -12,14 +12,16 @@ public static class ReportingEndpoints
 {
     public static void MapReportingEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/reports").RequireAuthorization();
+        var group = app.MapGroup("/reports").RequireAuthorization().WithTags("Reports");
 
         // Finance sees every department; a manager sees only their own department.
         // Role membership is enforced declaratively via the policy below; the
         // department-scoping itself happens in IReportingService.
         group.MapGet("/department-spend", async (ClaimsPrincipal user, IReportingService reporting, CancellationToken ct) =>
             Results.Ok(await reporting.GetDepartmentSpendAsync(user.ToCallerContext(), ct)))
-            .RequireAuthorization([Policies.CanViewDepartmentSpend]);
+            .RequireAuthorization([Policies.CanViewDepartmentSpend])
+            .WithSummary("Get department spend summaries")
+            .WithDescription("Finance sees every department's spend summary; a manager sees only their own department's.");
 
         // Finance-only export, additionally gated by a business-hours check — the
         // traditional-code version of what becomes a PDP context check in Stage 4.
@@ -36,7 +38,11 @@ public static class ReportingEndpoints
             var summaries = await reporting.GetDepartmentSpendAsync(user.ToCallerContext(), ct);
             var csv = BuildCsv(summaries);
             return Results.File(Encoding.UTF8.GetBytes(csv), "text/csv", "department-spend.csv");
-        }).RequireAuthorization(Policies.CanExportDepartmentSpend);
+        })
+            .RequireAuthorization(Policies.CanExportDepartmentSpend)
+            .WithSummary("Export department spend as CSV")
+            .WithDescription("Finance-only export of department spend summaries, restricted to " +
+                "Monday-Friday, 9am-5pm UTC.");
     }
 
     private static string BuildCsv(IReadOnlyList<DepartmentSpendSummaryDto> summaries)

@@ -3,11 +3,9 @@ using AuthZen.Contracts;
 
 namespace Meridian.Pdp.Service.Pdp;
 
-// Pure, DB-free helpers for reading SARC properties. Dictionary<string,
-// object> properties/context deserialize through System.Text.Json's default
-// object converter as boxed JsonElement, not as string/decimal directly —
-// this is the single easiest place to get a subtle bug wrong, so it's
-// centralized here.
+// Pure, DB-free helpers for reading SARC properties. Values deserialize as
+// boxed JsonElement, not string/decimal directly — centralized here so that
+// conversion only happens in one place.
 public static class RulePrimitives
 {
     public static bool IsOwner(AccessEvaluationRequest request)

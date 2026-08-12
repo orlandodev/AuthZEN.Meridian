@@ -1,3 +1,5 @@
+using Meridian.DataAccess.Models;
+using Meridian.DataAccess.PdP;
 using Meridian.Pdp.Service.Pdp;
 using Meridian.UnitTests.TestSupport;
 
@@ -13,6 +15,60 @@ public class RulesEngineTests
     private static readonly TimeProvider OutsideBusinessHours =
         new FakeTimeProvider(new DateTimeOffset(2026, 7, 25, 12, 0, 0, TimeSpan.Zero));
 
+
+    // ---- expense / create ----
+
+    [Theory]
+    [InlineData("u-emma", "Sales")]   // employee
+    [InlineData("u-nadia", "Sales")]  // manager
+    [InlineData("u-finn", "Finance")] // finance
+    public async Task Expense_Create_OwnerAndDepartmentMatchCaller_Allowed(string subjectId, string department)
+    {
+        using var db = PolicyDbContextTestFactory.Create();
+        var engine = new PolicyRulesEngine(db);
+
+        var request = RequestFactory.ExpenseCreateRequest(subjectId, ownerId: subjectId, department: department);
+
+        (await engine.EvaluateAsync(request)).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Expense_Create_OwnerIdDoesNotMatchSubject_Denied()
+    {
+        // Defense in depth: a PEP that ever lets a caller assert someone
+        // else's ownerId (e.g. a future "create on behalf of" bug) must
+        // still be denied here, not just trusted.
+        using var db = PolicyDbContextTestFactory.Create();
+        var engine = new PolicyRulesEngine(db);
+
+        var request = RequestFactory.ExpenseCreateRequest("u-emma", ownerId: "u-mateo", department: "Sales");
+
+        (await engine.EvaluateAsync(request)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Expense_Create_DepartmentDoesNotMatchSubjectsOwnDepartment_Denied()
+    {
+        // u-emma is Sales; claiming Finance must be denied even though the
+        // ownerId is correct.
+        using var db = PolicyDbContextTestFactory.Create();
+        var engine = new PolicyRulesEngine(db);
+
+        var request = RequestFactory.ExpenseCreateRequest("u-emma", ownerId: "u-emma", department: "Finance");
+
+        (await engine.EvaluateAsync(request)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Expense_Create_UnknownSubject_Denied()
+    {
+        using var db = PolicyDbContextTestFactory.Create();
+        var engine = new PolicyRulesEngine(db);
+
+        var request = RequestFactory.ExpenseCreateRequest("u-ghost", ownerId: "u-ghost", department: "Sales");
+
+        (await engine.EvaluateAsync(request)).Should().BeFalse();
+    }
 
     // ---- expense / read ----
 
@@ -52,8 +108,7 @@ public class RulesEngineTests
     [Fact]
     public async Task Expense_Read_ManagerOfOwner_Draft_Denied()
     {
-        // The critical Draft carve-out regression test: preserved exactly
-        // even for a manager who genuinely manages the owner.
+        // Draft carve-out overrides even a genuine manager-of relationship.
         using var db = PolicyDbContextTestFactory.Create();
         var engine = new PolicyRulesEngine(db);
 
@@ -65,7 +120,7 @@ public class RulesEngineTests
     [Fact]
     public async Task Expense_Read_ManagerOfOwner_MissingStatus_Denied()
     {
-        // Regression: a PEP that omits "status" must fail closed, not be
+        // Fail closed: a PEP that omits "status" must be denied, not
         // treated as equivalent to "not Draft".
         using var db = PolicyDbContextTestFactory.Create();
         var engine = new PolicyRulesEngine(db);
@@ -91,6 +146,32 @@ public class RulesEngineTests
 
         // u-nadia only manages u-emma and u-mateo, not u-finn.
         var request = RequestFactory.ExpenseRequest("u-nadia", "read", ownerId: "u-finn", status: "Submitted");
+
+        (await engine.EvaluateAsync(request)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Expense_Read_SameDepartmentManagerButNotManagerOf_Denied()
+    {
+        // Isolates department from ManagerOf, unlike the test above (u-finn
+        // differs on both). CanRead never reads a "department" property at
+        // all — it's ManagerOf-only — so a second manager who shares u-emma's
+        // department but has no ManagerOf row must still be denied here, even
+        // though Meridian.Services.ExpenseService.GetVisibleExpensesAsync
+        // (Expenses.Api's list endpoint) would return u-emma's expense to
+        // this same caller purely on department match. That divergence
+        // between list and detail is real: see ExpenseServiceTests.
+        // GetVisibleExpensesAsync_ReturnsDepartmentExpenses_ForManagerCaller,
+        // which proves the list side ignores ManagerOf entirely.
+        using var db = PolicyDbContextTestFactory.Create();
+        db.RoleAssignments.Add(new RoleAssignment
+        {
+            UserId = "u-priya", Role = PolicyConstants.RoleNames.Manager, Department = "Sales"
+        });
+        await db.SaveChangesAsync();
+        var engine = new PolicyRulesEngine(db);
+
+        var request = RequestFactory.ExpenseRequest("u-priya", "read", ownerId: "u-emma", status: "Submitted");
 
         (await engine.EvaluateAsync(request)).Should().BeFalse();
     }

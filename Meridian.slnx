@@ -25,6 +25,7 @@
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="Tests/Meridian.AuthZen.ConformanceTests/Meridian.AuthZen.ConformanceTests.csproj" />
+    <Project Path="Tests/Meridian.IntegrationTests/Meridian.IntegrationTests.csproj" />
     <Project Path="Tests/Meridian.UnitTests/Meridian.UnitTests.csproj" />
   </Folder>
 </Solution>

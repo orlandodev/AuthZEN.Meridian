@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <!-- ExpensesDbContext's TryDecideAsync uses EF Core's ExecuteUpdateAsync,
+         a relational-only feature the InMemory provider doesn't implement
+         (see Tests/Meridian.UnitTests/DataAccess/ExpenseRepositoryTests.cs's
+         comment on the same limitation) — Expenses.Api's side of these tests
+         needs a real Postgres, so PolicyDbContext (Pdp.Service, read-only,
+         no such feature) stays on InMemory while ExpensesDbContext uses this. -->
+    <PackageReference Include="Testcontainers.PostgreSql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Both entry points are top-level-statement Programs with the same simple
+         name; each needs its own alias so WebApplicationFactory<T> can target one
+         specifically. See Meridian.UnitTests/PdpService/PdpApiFactory.cs for the
+         same pattern used against a single assembly. -->
+    <ProjectReference Include="..\..\Authorization\Meridian.Pdp.Service\Meridian.Pdp.Service.csproj">
+      <Aliases>PdpAssembly</Aliases>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Services\Meridian.Expenses.Api\Meridian.Expenses.Api.csproj">
+      <Aliases>ExpensesAssembly</Aliases>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Authorization\AuthZen.Contracts\AuthZen.Contracts.csproj" />
+    <ProjectReference Include="..\..\Authorization\AuthZen.Pep\AuthZen.Pep.csproj" />
+    <ProjectReference Include="..\..\Common\Meridian.DataAccess\Meridian.DataAccess.csproj" />
+    <ProjectReference Include="..\..\Common\Meridian.Services\Meridian.Services.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="FluentAssertions" />
+  </ItemGroup>
+
+</Project>

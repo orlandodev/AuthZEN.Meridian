@@ -10,7 +10,9 @@ using Meridian.Services.Contracts;
 // proving one policy enforced across multiple services.
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
-builder.AddMeridianOpenApi();
+builder.AddMeridianOpenApi(
+    title: "Meridian Reporting API",
+    description: "Department spend summaries and CSV export, for Finance and department managers.");
 
 // EF Core against the Aspire-provisioned Postgres database "expensesdb".
 builder.AddNpgsqlDbContext<ReportingDbContext>("reportingdb");
@@ -29,6 +31,7 @@ builder.Services.AddScoped<IReportingService, ReportingService>();
 builder.Services.AddScoped<IReportingRepository, ReportingRepository>();
 
 var app = builder.Build();
+app.UseApiExceptionHandling();
 app.MapDefaultEndpoints();
 app.MapMeridianOpenApi(new Dictionary<string, string>
 {
