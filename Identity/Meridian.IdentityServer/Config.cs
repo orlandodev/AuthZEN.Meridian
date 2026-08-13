@@ -82,13 +82,10 @@ public static class Config
             AllowedCorsOrigins = { "https://localhost:59577", "https://localhost:59575", "https://localhost:59576", "https://localhost:59578" }
         },
 
-        // Shared service identity for backend APIs calling the PDP (Expenses,
-        // Receipts, and Reporting all authenticate as this client via client
-        // credentials — no end user is involved in this hop). One shared
-        // client is a deliberate simplification for a teaching repo; split
-        // into one client per service later if you want per-service
-        // auditability in the PDP's logs/traces instead of relying on OTEL's
-        // service.name to tell them apart.
+        // Shared service identity for backend APIs calling the PDP via client
+        // credentials — no end user is involved. One shared client is a
+        // deliberate simplification; split per service later for per-service
+        // auditability in the PDP's logs instead of relying on OTEL's service.name.
         //
         // DEV SECRET — not for use in production.
         new Client

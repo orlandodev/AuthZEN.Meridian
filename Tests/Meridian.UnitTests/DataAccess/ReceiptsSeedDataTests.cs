@@ -3,11 +3,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Meridian.UnitTests.DataAccess;
 
-// The 2 Receipt rows are now seeded via ReceiptsDbContext's HasData (baked
-// into the InitialCreate migration) with a fixed placeholder BlobUri —
-// HasData can't call the async blob upload. ReceiptBlobContentSeeder runs at
-// service startup to upload real placeholder content and fill in BlobUri;
-// see ReceiptBlobContentSeederTests below for that half.
+// The 2 Receipt rows are seeded via ReceiptsDbContext's HasData with a fixed
+// placeholder BlobUri, since HasData can't call the async blob upload.
+// ReceiptBlobContentSeeder fills in the real BlobUri at startup — see
+// ReceiptBlobContentSeederTests for that half.
 public class ReceiptsSeedDataTests
 {
     private static ReceiptsDbContext CreateSeededContext()

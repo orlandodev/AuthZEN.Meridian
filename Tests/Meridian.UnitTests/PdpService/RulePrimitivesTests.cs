@@ -114,6 +114,34 @@ public class RulePrimitivesTests
     }
 
     [Fact]
+    public void GetResourceStatus_ExplicitJsonNull_ReturnsNull()
+    {
+        // System.Text.Json short-circuits a JSON `null` token before the
+        // object converter runs, so an explicit `"status": null` round-trips
+        // as a genuine C# null in the dictionary, not a boxed JsonElement —
+        // confirmed by roundTripped.Resource.Properties!["status"] below.
+        // (A candidate fix once assumed the opposite — that it would box as
+        // JsonElement{ValueKind.Null} and need special-casing — but this
+        // test disproves that: the existing `raw is null` check already
+        // handles it correctly with no extra code needed.)
+        var request = new AccessEvaluationRequest
+        {
+            Subject = new Subject { Type = "user", Id = "u-nadia" },
+            Action = new AuthZenAction { Name = "read" },
+            Resource = new Resource
+            {
+                Type = "expense",
+                Id = "expense-1",
+                Properties = new Dictionary<string, object> { ["ownerId"] = "u-emma", ["status"] = null! }
+            }
+        };
+        var roundTripped = RoundTrip(request);
+        roundTripped.Resource.Properties!["status"].Should().BeNull();
+
+        RulePrimitives.GetResourceStatus(roundTripped).Should().BeNull();
+    }
+
+    [Fact]
     public void GetResourceDepartment_ReturnsValue()
     {
         var request = RequestFactory.DepartmentSpendRequest("u-nadia", "read", department: "Sales");

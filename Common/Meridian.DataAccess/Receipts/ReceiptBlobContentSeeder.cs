@@ -1,14 +1,10 @@
 namespace Meridian.DataAccess.Receipts;
 
-// The 2 Receipt rows themselves are seeded via ReceiptsDbContext's HasData
-// migration with a placeholder BlobUri ("seed-pending") — HasData can't call
-// the async blob storage upload, since the real BlobUri is only known at
-// runtime (it embeds the Azurite/Storage host:port). This runs at service
-// startup to upload the actual placeholder content and fill in the real
-// BlobUri by fixed, known id. Guarded by that same "seed-pending" sentinel:
-// once a row's BlobUri has been filled in, later startups skip it, so a
-// container restart/redeploy doesn't re-upload placeholder content or
-// re-issue blob writes indefinitely.
+// ReceiptsDbContext's HasData seeds the 2 Receipt rows with a placeholder
+// BlobUri ("seed-pending"), since HasData can't call the async blob upload.
+// This runs at startup to upload the real placeholder content and fill in
+// the real BlobUri by fixed id; the same sentinel makes it idempotent, so a
+// restart doesn't re-upload.
 public static class ReceiptBlobContentSeeder
 {
     private const string PendingBlobUri = "seed-pending";

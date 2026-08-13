@@ -3,11 +3,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Meridian.UnitTests.DataAccess;
 
-// Department spend summaries are now seeded via ReportingDbContext's HasData
-// (baked into the InitialCreate migration) with a fixed Period ("2025-01")
-// rather than TimeProvider.UtcNow's current month — HasData needs
-// compile-time-static values, so "the current month" is no longer a valid
-// seed value. See ReportingDbContext.OnModelCreating for why.
+// Department spend summaries are seeded via ReportingDbContext's HasData
+// with a fixed Period ("2025-01") rather than the current month — see
+// ReportingDbContext.OnModelCreating for why HasData needs a static value.
 public class ReportingSeedDataTests
 {
     private static ReportingDbContext CreateSeededContext()

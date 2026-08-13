@@ -5,7 +5,10 @@ using Meridian.ServiceDefaults;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
-builder.AddMeridianOpenApiClientCredentials();
+builder.AddMeridianOpenApiClientCredentials(
+    title: "Meridian Policy Decision Point (PDP)",
+    description: "AuthZEN-compatible access-evaluation service. Backend APIs (Policy Enforcement " +
+        "Points) call this service to decide whether a subject may perform an action on a resource.");
 
 // EF Core against the Aspire-provisioned Postgres database "policydb".
 builder.AddNpgsqlDbContext<PolicyDbContext>("policydb");
@@ -22,6 +25,7 @@ builder.AddMeridianApiAuthentication(audience: "pdp.evaluate");
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+app.UseApiExceptionHandling();
 app.MapDefaultEndpoints();
 app.MapMeridianOpenApiClientCredentials(new Dictionary<string, string>
 {

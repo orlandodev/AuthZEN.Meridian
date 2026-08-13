@@ -12,13 +12,11 @@ public class PolicyDbContext(DbContextOptions<PolicyDbContext> options) : DbCont
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Seed values are fixed literals, not computed at runtime: HasData is
-        // baked into the compiled migration (and the model snapshot used to
-        // diff future migrations) at `migrations add` time, not executed at
-        // app startup. A non-deterministic value here would be captured once
-        // into the migration and then regenerate differently on every
-        // subsequent OnModelCreating call, which EF would see as a spurious
-        // model change. See the four test users in TestUsers.cs.
+        // Seed values are fixed literals: HasData is baked into the compiled
+        // migration at `migrations add` time, not executed at startup — a
+        // non-deterministic value here would regenerate differently on every
+        // OnModelCreating call, which EF sees as a spurious model change.
+        // See TestUsers.cs's four users.
         modelBuilder.Entity<RoleAssignment>(e =>
         {
             e.HasKey(r => r.UserId);

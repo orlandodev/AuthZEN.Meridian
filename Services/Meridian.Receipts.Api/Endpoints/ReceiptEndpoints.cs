@@ -28,14 +28,17 @@ public static class ReceiptEndpoints
 
     public static void MapReceiptEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/receipts").RequireAuthorization();
+        var group = app.MapGroup("/receipts").RequireAuthorization().WithTags("Receipts");
 
         // List: finance sees every receipt for the expense, everyone else sees only
         // their own — no department filtering, matching how GET /expenses itself has
         // no department logic (that only shows up in the resource-based checks below).
         group.MapGet("/", async (Guid expenseId, ClaimsPrincipal user,
             IReceiptService receipts, CancellationToken ct) =>
-            Results.Ok(await receipts.GetForExpenseAsync(expenseId, user.ToCallerContext(), ct)));
+            Results.Ok(await receipts.GetForExpenseAsync(expenseId, user.ToCallerContext(), ct)))
+            .WithSummary("List receipts for an expense")
+            .WithDescription("Finance sees every receipt attached to the expense; everyone else sees only " +
+                "the receipts they uploaded themselves.");
 
         // Download: resource-based ownership check. The Stage 1 drift bug lives in
         // OwnerOrPrivilegedHandler, not here.
@@ -61,18 +64,18 @@ public static class ReceiptEndpoints
             }
 
             return Results.Stream(download.Value.Content, download.Value.ContentType);
-        });
+        })
+            .WithSummary("Download a receipt")
+            .WithDescription("Streams the receipt file back to the caller if they're its owner or Finance.");
 
         // Upload: metadata (expenseId) + file, multipart/form-data. Both parameters
         // need [FromForm] once more than one form-bound value is present.
         //
-        // Any minimal API endpoint that binds form data — including IFormFile — gets
-        // antiforgery metadata attached automatically in .NET 8+, regardless of whether
-        // antiforgery middleware is registered. This API is JWT-bearer authenticated,
-        // not cookie-based, so there's no CSRF exposure to protect against here, and no
-        // UseAntiforgery() is registered anywhere in the pipeline — without this call the
-        // endpoint's metadata demands a check that nothing can perform, and every request
-        // throws InvalidOperationException before the handler ever runs.
+        // Any endpoint binding form data (including IFormFile) gets antiforgery
+        // metadata attached automatically, regardless of whether antiforgery
+        // middleware is registered. This API is JWT-bearer authenticated, not
+        // cookie-based, so there's no CSRF exposure and no UseAntiforgery() in the
+        // pipeline — without DisableAntiforgery(), every request would 500.
         group.MapPost("/", async ([FromForm] Guid expenseId, IFormFile file, ClaimsPrincipal user,
             IReceiptService receipts, IAuthorizationService authz, CancellationToken ct) =>
         {
@@ -103,6 +106,10 @@ public static class ReceiptEndpoints
             var created = await receipts.UploadAsync(
                 expenseId, stream, file.FileName, file.ContentType, user.ToCallerContext(), ct);
             return Results.Created($"/receipts/{created.Id}", created);
-        }).DisableAntiforgery();
+        })
+            .DisableAntiforgery()
+            .WithSummary("Upload a receipt")
+            .WithDescription("Attaches a PNG, JPEG, or PDF file to an expense. Once a receipt already " +
+                "exists for that expense, only its owner (or Finance) may attach more.");
     }
 }

@@ -9,20 +9,14 @@ public class ReportingDbContext(DbContextOptions<ReportingDbContext> options) : 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // These totals are computed by hand from Expenses' seed data (see
-        // ExpensesDbContext.cs): Sales = 42.50 + 1200 + 6800 = 8042.50;
-        // Finance has no seeded expenses this period. This is a fixture
-        // standing in for a real projection, not a real ETL pipeline — a
-        // production system would populate this table from an event stream
-        // or a scheduled job reading the Expenses database.
+        // Totals are computed by hand from Expenses' seed data (Sales =
+        // 42.50 + 1200 + 6800 = 8042.50; Finance has none) — a fixture
+        // standing in for a real projection a production system would
+        // populate from an event stream or scheduled job.
         //
-        // Period is a fixed literal ("2025-01"), not TimeProvider.UtcNow's
-        // current month: HasData is baked into the compiled migration at
-        // `migrations add` time, so "the current month" isn't a valid seed
-        // value — it would bake one fixed month into the migration while
-        // OnModelCreating (which also runs at every app startup) keeps
-        // computing a *different* "current month," which EF would see as a
-        // spurious pending model change.
+        // Period is a fixed literal ("2025-01"), not the current month: a
+        // live value would drift from what OnModelCreating recomputes on
+        // every startup, which EF sees as a spurious model change.
         modelBuilder.Entity<DepartmentSpendSummary>().HasData(
             new DepartmentSpendSummary
             {

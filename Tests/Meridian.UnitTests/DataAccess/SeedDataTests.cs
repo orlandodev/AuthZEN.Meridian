@@ -3,11 +3,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Meridian.UnitTests.DataAccess;
 
-// Expenses are now seeded via ExpensesDbContext's OnModelCreating HasData,
-// baked into the InitialCreate migration — not an imperative EnsureSeededAsync
-// call. EF InMemory + EnsureCreated() applies HasData the same way
-// Migrate() does against a real Postgres database, so this exercises the
-// exact same seed rows.
+// Expenses are seeded via ExpensesDbContext's OnModelCreating HasData. EF
+// InMemory + EnsureCreated() applies HasData the same way Migrate() does
+// against a real Postgres database, so this exercises the exact same rows.
 public class SeedDataTests
 {
     private static ExpensesDbContext CreateSeededContext()

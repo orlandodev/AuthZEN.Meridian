@@ -9,6 +9,28 @@ namespace Meridian.Pdp.Service.Expense;
 // claims and an in-process constant.
 public static class ExpenseRules
 {
+    // Defense in depth: Expenses.Api's create path already derives
+    // ownerId/department from the caller's claims, so this check is
+    // unreachable-false today — but a future "create on behalf of" feature
+    // would silently bypass a bare `true`, not a rule that actually checks.
+    public static async Task<bool> CanCreate(AccessEvaluationRequest request, RuleWorkspace ws, CancellationToken ct)
+    {
+        if (!RulePrimitives.IsOwner(request))
+        {
+            return false;
+        }
+
+        var subject = await ws.GetProfileAsync(request.Subject.Id, ct);
+        if (subject is null)
+        {
+            return false;
+        }
+
+        var department = RulePrimitives.GetResourceDepartment(request);
+        return department is not null
+               && string.Equals(department, subject.Department, StringComparison.OrdinalIgnoreCase);
+    }
+
     public static async Task<bool> CanRead(AccessEvaluationRequest request, RuleWorkspace ws, CancellationToken ct)
     {
         if (RulePrimitives.IsOwner(request))
@@ -61,7 +83,8 @@ public static class ExpenseRules
 
         if (subject.Role == PolicyConstants.RoleNames.Finance)
         {
-            return true; // unconditional, no limit
+            // unconditional, no limit
+            return true;
         }
 
         if (subject.Role != PolicyConstants.RoleNames.Manager)

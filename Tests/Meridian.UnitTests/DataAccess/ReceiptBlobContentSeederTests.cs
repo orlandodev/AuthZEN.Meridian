@@ -52,8 +52,6 @@ public class ReceiptBlobContentSeederTests
     [Fact]
     public async Task EnsureBlobContentAsync_DoesNotReuploadOrTouchBlobStorage_OnSecondRun()
     {
-        // Regression: previously this ran unconditionally on every service
-        // startup, re-uploading placeholder content indefinitely.
         using var db = CreateSeededContext();
         var blobStorage = CreateBlobStorage();
         await ReceiptBlobContentSeeder.EnsureBlobContentAsync(db, blobStorage.Object);

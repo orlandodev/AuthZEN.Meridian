@@ -98,8 +98,6 @@ public class PdpApiIntegrationTests(PdpApiFactory factory) : IClassFixture<PdpAp
     [Fact]
     public async Task Evaluations_Boxcar_EntryMissingResourceAndNoBatchDefault_ReturnsBadRequest()
     {
-        // Regression: this used to throw an unhandled InvalidOperationException
-        // (raw 500) instead of a clean 400.
         var client = CreateAuthenticatedClient();
 
         var batch = new AccessEvaluationsRequest
