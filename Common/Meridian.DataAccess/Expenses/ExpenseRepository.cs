@@ -26,11 +26,19 @@ public sealed class ExpenseRepository(ExpensesDbContext db) : IExpenseRepository
     public Task SaveChangesAsync(CancellationToken ct) =>
         db.SaveChangesAsync(ct);
 
-    public Task<int> TryDecideAsync(Guid id, ExpenseStatus decision, string deciderUserId, DateTimeOffset decidedAt, CancellationToken ct) =>
+    public Task<int> TrySubmitAsync(Guid id, CancellationToken ct) =>
+        db.Expenses
+            .Where(e => e.Id == id && e.Status == ExpenseStatus.Draft)
+            .ExecuteUpdateAsync(s => s.SetProperty(e => e.Status, ExpenseStatus.Submitted), ct);
+
+    public Task<int> TryDecideAsync(
+        Guid id, ExpenseStatus decision, string deciderUserId, string? rejectionReason,
+        DateTimeOffset decidedAt, CancellationToken ct) =>
         db.Expenses
             .Where(e => e.Id == id && e.Status == ExpenseStatus.Submitted)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(e => e.Status, decision)
                 .SetProperty(e => e.ApproverUserId, deciderUserId)
-                .SetProperty(e => e.DecidedAt, decidedAt), ct);
+                .SetProperty(e => e.DecidedAt, decidedAt)
+                .SetProperty(e => e.RejectionReason, rejectionReason), ct);
 }

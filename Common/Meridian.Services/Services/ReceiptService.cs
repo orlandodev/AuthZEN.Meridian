@@ -32,12 +32,6 @@ public sealed class ReceiptService(IReceiptRepository repository, IReceiptBlobSt
     public async Task<ReceiptDto?> GetMetadataByIdAsync(Guid id, CancellationToken ct) =>
         (await GetByIdAsync(id, ct))?.ToDto();
 
-    public async Task<ReceiptDto?> GetAnyMetadataForExpenseAsync(Guid expenseId, CancellationToken ct)
-    {
-        var receipts = await repository.GetByExpenseIdAsync(expenseId, ct);
-        return receipts.FirstOrDefault()?.ToDto();
-    }
-
     public async Task<(Stream Content, string ContentType)?> DownloadAsync(Guid id, CancellationToken ct)
     {
         var receipt = await GetByIdAsync(id, ct);

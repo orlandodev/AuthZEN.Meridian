@@ -15,5 +15,6 @@ public static class ExpenseMapper
         expense.Status,
         expense.ApproverUserId,
         expense.CreatedAt,
-        expense.DecidedAt);
+        expense.DecidedAt,
+        expense.RejectionReason);
 }

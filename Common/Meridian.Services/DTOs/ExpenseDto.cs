@@ -12,4 +12,5 @@ public sealed record ExpenseDto(
     ExpenseStatus Status,
     string? ApproverUserId,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? DecidedAt);
+    DateTimeOffset? DecidedAt,
+    string? RejectionReason);

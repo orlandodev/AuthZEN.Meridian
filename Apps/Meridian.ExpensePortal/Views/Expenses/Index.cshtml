@@ -1,4 +1,7 @@
 @model List<ExpenseDto>
+@{
+    var currentUserId = User.GetUserId();
+}
 
 <h1>Expenses</h1>
 
@@ -33,12 +36,24 @@
                     <td class="amount">@expense.Amount.ToString("C")</td>
                     <td><span class="status-pill status-@expense.Status.ToString().ToLowerInvariant()">@expense.Status</span></td>
                     <td>
-                        @if ((User.IsInRole("manager") || User.IsInRole("finance"))
+                        @if (expense.OwnerUserId == currentUserId && expense.Status == ExpenseStatus.Draft)
+                        {
+                            <form method="post" asp-controller="Expenses" asp-action="Submit">
+                                <input type="hidden" name="id" value="@expense.Id" />
+                                <button type="submit" class="secondary">Submit</button>
+                            </form>
+                        }
+                        else if ((User.IsInRole("manager") || User.IsInRole("finance"))
                              && expense.Status == ExpenseStatus.Submitted)
                         {
                             <form method="post" asp-controller="Expenses" asp-action="Approve">
                                 <input type="hidden" name="id" value="@expense.Id" />
                                 <button type="submit" class="secondary">Approve</button>
+                            </form>
+                            <form method="post" asp-controller="Expenses" asp-action="Reject">
+                                <input type="hidden" name="id" value="@expense.Id" />
+                                <textarea name="rejectionReason" placeholder="Reason for rejecting" required rows="1"></textarea>
+                                <button type="submit" class="secondary">Reject</button>
                             </form>
                         }
                     </td>

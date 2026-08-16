@@ -15,8 +15,17 @@ public interface IExpenseService
     // department from.
     Task<ExpenseDto?> CreateAsync(CreateExpenseRequest request, CallerContext caller, CancellationToken ct);
 
-    // decision is Approved or Rejected. Returns null if the expense no longer
-    // exists or is no longer Submitted by the time this runs (a race against
-    // the caller's own pre-check read, or a concurrent decision).
-    Task<ExpenseDto?> DecideAsync(Guid id, ExpenseStatus decision, string deciderUserId, CancellationToken ct);
+    // Returns null if the expense no longer exists or is no longer Draft by the
+    // time this runs (a race against the caller's own pre-check read, or a
+    // concurrent submit). The zero-receipt check happens in the endpoint, before
+    // this is called.
+    Task<ExpenseDto?> SubmitAsync(Guid id, CancellationToken ct);
+
+    // decision is Approved or Rejected; rejectionReason is persisted only when
+    // rejecting (the caller/DTO validation already guarantees it's non-empty in
+    // that case). Returns null if the expense no longer exists or is no longer
+    // Submitted by the time this runs (a race against the caller's own
+    // pre-check read, or a concurrent decision).
+    Task<ExpenseDto?> DecideAsync(
+        Guid id, ExpenseStatus decision, string deciderUserId, string? rejectionReason, CancellationToken ct);
 }

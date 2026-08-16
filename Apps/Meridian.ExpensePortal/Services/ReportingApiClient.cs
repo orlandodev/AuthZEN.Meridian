@@ -30,7 +30,6 @@ public sealed class ReportingApiClient(HttpClient http)
             return (null, "Exports are only available during business hours.");
         }
 
-        var body = await response.Content.ReadAsStringAsync(ct);
-        return (null, string.IsNullOrWhiteSpace(body) ? response.ReasonPhrase : body);
+        return (null, await ApiErrorReader.ReadErrorMessageAsync(response, ct));
     }
 }

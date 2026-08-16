@@ -1,0 +1,80 @@
+using AuthZen.Contracts;
+using AuthZen.Pep;
+using Meridian.DataAccess.Models;
+using Meridian.Expenses.Api.Authorization;
+using Meridian.Services;
+using Meridian.Services.DTOs;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+using static Meridian.UnitTests.ExpensesApi.TestSupport.AuthorizationTestData;
+
+namespace Meridian.UnitTests.ExpensesApi.Authorization;
+
+// This handler's job is narrow: build the right SARC request for the "submit"
+// action and honor whatever the PDP decides — the owner-only rule itself lives
+// in ExpenseRules.CanSubmit (see RulesEngineTests' Expense_Submit_* cases).
+public class SubmitHandlerTests
+{
+    private static async Task<AuthorizationHandlerContext> RunAsync(
+        ClaimsPrincipal user, ExpenseDto resource, IPolicyDecisionClient pdp)
+    {
+        var sut = new SubmitHandler(pdp);
+        var context = new AuthorizationHandlerContext([new SubmitRequirement()], user, resource);
+        await sut.HandleAsync(context);
+        return context;
+    }
+
+    [Fact]
+    public async Task Succeeds_WhenPdpPermits()
+    {
+        var pdp = new Mock<IPolicyDecisionClient>();
+        pdp.Setup(p => p.IsAllowedAsync(It.IsAny<AccessEvaluationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var user = BuildUser(userId: OwnerUserId, role: Roles.Employee);
+        var expense = BuildExpense(ownerUserId: OwnerUserId, status: ExpenseStatus.Draft);
+
+        var context = await RunAsync(user, expense, pdp.Object);
+
+        context.HasSucceeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Fails_WhenPdpDenies()
+    {
+        var pdp = new Mock<IPolicyDecisionClient>();
+        pdp.Setup(p => p.IsAllowedAsync(It.IsAny<AccessEvaluationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var user = BuildUser(userId: OtherUserId, role: Roles.Employee);
+        var expense = BuildExpense(ownerUserId: OwnerUserId, status: ExpenseStatus.Draft);
+
+        var context = await RunAsync(user, expense, pdp.Object);
+
+        context.HasSucceeded.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task BuildsSarcRequest_WithSubmitAction()
+    {
+        AccessEvaluationRequest? captured = null;
+        var pdp = new Mock<IPolicyDecisionClient>();
+        pdp.Setup(p => p.IsAllowedAsync(It.IsAny<AccessEvaluationRequest>(), It.IsAny<CancellationToken>()))
+            .Callback<AccessEvaluationRequest, CancellationToken>((request, _) => captured = request)
+            .ReturnsAsync(true);
+
+        var user = BuildUser(userId: OwnerUserId, role: Roles.Employee);
+        var expense = BuildExpense(ownerUserId: OwnerUserId, status: ExpenseStatus.Draft);
+
+        await RunAsync(user, expense, pdp.Object);
+
+        captured.Should().NotBeNull();
+        captured!.Subject.Id.Should().Be(OwnerUserId);
+        captured.Action.Name.Should().Be("submit");
+        captured.Resource.Type.Should().Be("expense");
+        captured.Resource.Id.Should().Be(expense.Id.ToString());
+        captured.Resource.Properties.Should().NotBeNull();
+        captured.Resource.Properties!["ownerId"].Should().Be(OwnerUserId);
+        captured.Resource.Properties!["status"].Should().Be(ExpenseStatus.Draft.ToString());
+    }
+}

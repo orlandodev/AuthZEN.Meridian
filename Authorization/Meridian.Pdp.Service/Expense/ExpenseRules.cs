@@ -73,6 +73,12 @@ public static class ExpenseRules
         return await ws.IsManagerOfAsync(subject.UserId, ownerId, ct);
     }
 
+    // Submit is owner-only, full stop — no manager/finance carve-out, unlike
+    // CanRead. Async only for signature-compatibility with the Rules dictionary
+    // in PolicyRulesEngine; owner-ness never needs a DB round trip.
+    public static Task<bool> CanSubmit(AccessEvaluationRequest request, RuleWorkspace ws, CancellationToken ct) =>
+        Task.FromResult(RulePrimitives.IsOwner(request));
+
     public static async Task<bool> CanDecide(AccessEvaluationRequest request, RuleWorkspace ws, CancellationToken ct)
     {
         var subject = await ws.GetProfileAsync(request.Subject.Id, ct);

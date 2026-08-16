@@ -47,10 +47,23 @@ public sealed class ExpenseService(IExpenseRepository repository) : IExpenseServ
         return expense.ToDto();
     }
 
-    public async Task<ExpenseDto?> DecideAsync(Guid id, ExpenseStatus decision, string deciderUserId, CancellationToken ct)
+    public async Task<ExpenseDto?> SubmitAsync(Guid id, CancellationToken ct)
+    {
+        var rowsUpdated = await repository.TrySubmitAsync(id, ct);
+        if (rowsUpdated == 0)
+        {
+            return null;
+        }
+
+        var expense = await repository.GetByIdAsync(id, ct);
+        return expense?.ToDto();
+    }
+
+    public async Task<ExpenseDto?> DecideAsync(
+        Guid id, ExpenseStatus decision, string deciderUserId, string? rejectionReason, CancellationToken ct)
     {
         var decidedAt = DateTimeOffset.UtcNow;
-        var rowsUpdated = await repository.TryDecideAsync(id, decision, deciderUserId, decidedAt, ct);
+        var rowsUpdated = await repository.TryDecideAsync(id, decision, deciderUserId, rejectionReason, decidedAt, ct);
         if (rowsUpdated == 0)
         {
             return null;

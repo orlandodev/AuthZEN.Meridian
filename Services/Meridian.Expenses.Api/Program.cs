@@ -2,6 +2,7 @@ using AuthZen.Pep;
 using Meridian.DataAccess.Expenses;
 using Meridian.Expenses.Api.Authorization;
 using Meridian.Expenses.Api.Endpoints;
+using Meridian.Expenses.Api.Services;
 using Meridian.ServiceDefaults;
 using Meridian.Services;
 using Meridian.Services.Contracts;
@@ -9,6 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
+builder.AddBearerForwarding();
 builder.AddMeridianOpenApi(
     title: "Meridian Expenses API",
     description: "Create, read, and decide (approve or reject) expense reports. " +
@@ -46,8 +48,14 @@ builder.Services.AddAuthorizationBuilder()
 // backed by an HttpClient, and a Singleton would capture it (and its
 // eventually-stale connection) for the life of the app.
 builder.Services.AddScoped<IAuthorizationHandler, OwnerOrPrivilegedHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, SubmitHandler>();
 builder.Services.AddScoped<IAuthorizationHandler, ApprovalHandler>();
 builder.Services.AddScoped<ExpenseVisibilityFilter>();
+
+// Story 4.0: blocks Submit when the expense has no receipts yet — see
+// ReceiptsLookupClient and BearerForwardingHandler.
+builder.Services.AddHttpClient<ReceiptsLookupClient>(c => c.BaseAddress = new("https+http://receipts-api"))
+    .AddHttpMessageHandler<BearerForwardingHandler>();
 
 builder.Services.AddScoped<IExpenseRepository, ExpenseRepository>();
 builder.Services.AddScoped<IExpenseService, ExpenseService>();

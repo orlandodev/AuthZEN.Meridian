@@ -8,6 +8,10 @@
         <dt>Department</dt><dd>@Model.Department</dd>
         <dt>Amount</dt><dd>@Model.Amount.ToString("C")</dd>
         <dt>Status</dt><dd><span class="status-pill status-@Model.Status.ToString().ToLowerInvariant()">@Model.Status</span></dd>
+        @if (Model.Status == ExpenseStatus.Rejected)
+        {
+            <dt>Rejection reason</dt><dd>@Model.RejectionReason</dd>
+        }
     </dl>
     <a asp-controller="Receipts" asp-action="ForExpense" asp-route-expenseId="@Model.Id">View receipts</a>
 </div>

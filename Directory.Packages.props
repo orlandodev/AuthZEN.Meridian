@@ -1,80 +1,81 @@
 <Project>
-	<!--
+  <!--
     Central Package Management. VERIFY every version below with `dotnet outdated`
     or the NuGet gallery before first restore. .NET 10, .NET Aspire, and Duende
     IdentityServer version independently; the values here are plausible pins, not
     guarantees. The Aspire.AppHost.Sdk version in Meridian.AppHost.csproj must be
     kept in sync with the Aspire.Hosting.* package versions here.
   -->
-	<PropertyGroup>
-		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-	</PropertyGroup>
-	<ItemGroup>
-		<!-- Aspire -->
-		<PackageVersion Include="Aspire.Hosting.AppHost" Version="13.4.6" />
-		<PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.4.6" />
-		<PackageVersion Include="Aspire.Hosting.Azure.Storage" Version="13.4.6" />
-		<PackageVersion Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.4.6" />
-		<PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="13.4.6" />
-		<PackageVersion Include="Duende.IdentityModel" Version="8.1.0" />
-		<PackageVersion Include="Moq" Version="4.20.72" />
-		<!-- Pinned to the last Apache-2.0-licensed release; 8.x+ requires a commercial license. -->
-		<PackageVersion Include="FluentAssertions" Version="7.2.2" />
-	</ItemGroup>
-	<ItemGroup>
-		<!-- OpenTelemetry (used by ServiceDefaults) -->
-		<PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.16.0" />
-		<PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.16.0" />
-		<PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.16.0" />
-		<PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.16.0" />
-		<PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.16.0" />
-	</ItemGroup>
-	<ItemGroup>
-		<!-- Platform / resilience / discovery -->
-		<PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.7.0" />
-		<PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.7.0" />
-	</ItemGroup>
-	<ItemGroup>
-		<!-- Auth -->
-		<PackageVersion Include="Duende.IdentityServer" Version="8.0.2" />
-		<!-- Client-credentials token acquisition/caching for service-to-service
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Aspire -->
+    <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.4.6" />
+    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.4.6" />
+    <PackageVersion Include="Aspire.Hosting.Azure.Storage" Version="13.4.6" />
+    <PackageVersion Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.4.6" />
+    <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="13.4.6" />
+    <PackageVersion Include="Duende.IdentityModel" Version="8.1.0" />
+    <PackageVersion Include="Moq" Version="4.20.72" />
+    <!-- Pinned to the last Apache-2.0-licensed release; 8.x+ requires a commercial license. -->
+    <PackageVersion Include="FluentAssertions" Version="7.2.2" />
+    <PackageVersion Include="SSH.NET" Version="2026.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- OpenTelemetry (used by ServiceDefaults) -->
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.16.0" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.16.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.16.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.16.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.16.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Platform / resilience / discovery -->
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.7.0" />
+    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.7.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Auth -->
+    <PackageVersion Include="Duende.IdentityServer" Version="8.0.2" />
+    <!-- Client-credentials token acquisition/caching for service-to-service
          calls (AuthZen.Pep -> Meridian.Pdp.Service). Verify this version
          against your restored Duende.IdentityServer version — they're
          released somewhat independently. -->
-		<PackageVersion Include="Duende.AccessTokenManagement" Version="4.2.0" />
-		<PackageVersion Include="Duende.AccessTokenManagement.OpenIdConnect" Version="4.2.0" />
-		<PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.10" />
-		<PackageVersion Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.10" />
-	</ItemGroup>
-	<ItemGroup>
-		<!-- API documentation -->
-		<!-- NOTE: Microsoft.AspNetCore.OpenApi 10.0.10 transitively pulls Microsoft.OpenApi 2.0.0,
+    <PackageVersion Include="Duende.AccessTokenManagement" Version="4.2.0" />
+    <PackageVersion Include="Duende.AccessTokenManagement.OpenIdConnect" Version="4.2.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.10" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- API documentation -->
+    <!-- NOTE: Microsoft.AspNetCore.OpenApi 10.0.10 transitively pulls Microsoft.OpenApi 2.0.0,
 		     which NuGet audit flags under GHSA-v5pm-xwqc-g5wc (fixed in 2.0.1). Overriding to 2.0.1
 		     breaks this package's XML-comment source generator (it's compiled against the exact
 		     2.0.0.0 assembly version) — leave unpinned until a patched AspNetCore.OpenApi ships. -->
-		<PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
-		<PackageVersion Include="Scalar.AspNetCore" Version="2.16.16" />
-		<PackageVersion Include="Microsoft.OpenApi" Version="2.7.5" />
-	</ItemGroup>
-	<ItemGroup>
-		<!-- Data -->
-		<PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.8" />
-		<PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.8" />
-		<PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.8" />
-		<!-- 10.0.3+ requires Microsoft.EntityFrameworkCore.Relational >= 10.0.4; keep this at or
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
+    <PackageVersion Include="Scalar.AspNetCore" Version="2.16.16" />
+    <PackageVersion Include="Microsoft.OpenApi" Version="2.7.5" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Data -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.8" />
+    <!-- 10.0.3+ requires Microsoft.EntityFrameworkCore.Relational >= 10.0.4; keep this at or
 		     above that floor to stay aligned with the EFCore 10.0.8 pin above and avoid an
 		     MSB3277 Relational-version conflict warning across every project referencing it. -->
-		<PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
-		<PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.0" />
-		<PackageVersion Include="Azure.Storage.Blobs" Version="12.29.1" />
-	</ItemGroup>
-	<ItemGroup>
-		<!-- Test -->
-		<PackageVersion Include="coverlet.collector" Version="6.0.4" />
-		<PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
-		<PackageVersion Include="xunit" Version="2.9.3" />
-		<PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
-		<PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.10" />
-		<PackageVersion Include="Testcontainers.PostgreSql" Version="4.1.0" />
-	</ItemGroup>
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.0" />
+    <PackageVersion Include="Azure.Storage.Blobs" Version="12.29.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Test -->
+    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.10" />
+    <PackageVersion Include="Testcontainers.PostgreSql" Version="4.1.0" />
+  </ItemGroup>
 </Project>

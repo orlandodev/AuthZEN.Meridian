@@ -17,8 +17,15 @@ public interface IExpenseRepository
 
     Task SaveChangesAsync(CancellationToken ct);
 
+    // Atomically transitions the expense to Submitted only if it is still Draft.
+    // Returns the number of rows affected: 0 means the expense didn't exist, or was
+    // no longer Draft (already submitted by a concurrent caller).
+    Task<int> TrySubmitAsync(Guid id, CancellationToken ct);
+
     // Atomically transitions the expense to decision only if it is still Submitted.
     // Returns the number of rows affected: 0 means the expense didn't exist, or was
     // no longer Submitted (already decided by a concurrent caller).
-    Task<int> TryDecideAsync(Guid id, ExpenseStatus decision, string deciderUserId, DateTimeOffset decidedAt, CancellationToken ct);
+    Task<int> TryDecideAsync(
+        Guid id, ExpenseStatus decision, string deciderUserId, string? rejectionReason,
+        DateTimeOffset decidedAt, CancellationToken ct);
 }

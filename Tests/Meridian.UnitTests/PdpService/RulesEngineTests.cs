@@ -187,6 +187,32 @@ public class RulesEngineTests
         (await engine.EvaluateAsync(request)).Should().BeFalse();
     }
 
+    // ---- expense / submit ----
+
+    [Fact]
+    public async Task Expense_Submit_Owner_Allowed()
+    {
+        using var db = PolicyDbContextTestFactory.Create();
+        var engine = new PolicyRulesEngine(db);
+
+        var request = RequestFactory.ExpenseRequest("u-emma", "submit", ownerId: "u-emma", status: "Draft");
+
+        (await engine.EvaluateAsync(request)).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Expense_Submit_NonOwner_Denied()
+    {
+        // Owner-only, full stop — unlike CanRead, Finance and a manager-of the
+        // owner get no carve-out here.
+        using var db = PolicyDbContextTestFactory.Create();
+        var engine = new PolicyRulesEngine(db);
+
+        var request = RequestFactory.ExpenseRequest("u-finn", "submit", ownerId: "u-emma", status: "Draft");
+
+        (await engine.EvaluateAsync(request)).Should().BeFalse();
+    }
+
     // ---- expense / approve, reject ----
 
     [Theory]

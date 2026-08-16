@@ -1,5 +1,7 @@
 using System.Security.Claims;
+using Meridian.DataAccess.Models;
 using Meridian.Receipts.Api.Authorization;
+using Meridian.Receipts.Api.Services;
 using Meridian.Services;
 using Meridian.Services.Contracts;
 using Microsoft.AspNetCore.Authorization;
@@ -77,7 +79,8 @@ public static class ReceiptEndpoints
         // cookie-based, so there's no CSRF exposure and no UseAntiforgery() in the
         // pipeline — without DisableAntiforgery(), every request would 500.
         group.MapPost("/", async ([FromForm] Guid expenseId, IFormFile file, ClaimsPrincipal user,
-            IReceiptService receipts, IAuthorizationService authz, CancellationToken ct) =>
+            IReceiptService receipts, ExpensesLookupClient expensesLookup, IAuthorizationService authz,
+            CancellationToken ct) =>
         {
             if (!IsAllowedReceiptFile(file))
             {
@@ -86,20 +89,23 @@ public static class ReceiptEndpoints
                     title: "Only PNG, JPEG, or PDF files are accepted.");
             }
 
-            // Resource-based ownership check, same OwnerOrPrivilegedRequirement pattern
-            // as the download path. Receipts.Api has no view of Expense ownership (and
-            // no inter-service call to Expenses.Api to get one), so the closest resource
-            // it can check against is any receipt already on file for this expenseId:
-            // once one exists, only its owner (or finance) may attach more. The first
-            // receipt uploaded for an expense establishes that expense's owner here.
-            var existing = await receipts.GetAnyMetadataForExpenseAsync(expenseId, ct);
-            if (existing is not null)
+            // Story 4.0: owner-only upload while the expense is still Draft. Manager
+            // and Finance can never upload, at any status — they're view-only on
+            // receipts, full stop. Receipts.Api has no view of the expense itself, so
+            // it asks Expenses.Api (see ExpensesLookupClient) rather than trusting
+            // anything caller-supplied. The decision itself goes through the same
+            // resource-based IAuthorizationService pattern Download uses above (see
+            // UploadEligibilityHandler), rather than an inline comparison here.
+            var expense = await expensesLookup.GetExpenseAsync(expenseId, ct);
+            if (expense is null)
             {
-                var result = await authz.AuthorizeAsync(user, existing, new OwnerOrPrivilegedRequirement());
-                if (!result.Succeeded)
-                {
-                    return Results.Forbid();
-                }
+                return Results.Forbid();
+            }
+
+            var result = await authz.AuthorizeAsync(user, expense, new UploadEligibilityRequirement());
+            if (!result.Succeeded)
+            {
+                return Results.Forbid();
             }
 
             await using var stream = file.OpenReadStream();
@@ -109,7 +115,7 @@ public static class ReceiptEndpoints
         })
             .DisableAntiforgery()
             .WithSummary("Upload a receipt")
-            .WithDescription("Attaches a PNG, JPEG, or PDF file to an expense. Once a receipt already " +
-                "exists for that expense, only its owner (or Finance) may attach more.");
+            .WithDescription("Attaches a PNG, JPEG, or PDF file to an expense. Only the expense's owner may " +
+                "upload, and only while it's still a Draft.");
     }
 }

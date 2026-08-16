@@ -123,7 +123,7 @@ public class ExpensesControllerTests
     {
         var sut = BuildController(_ => new HttpResponseMessage(HttpStatusCode.OK));
 
-        var result = await sut.Reject(ExpenseId);
+        var result = await sut.Reject(ExpenseId, "Missing an itemized receipt.");
 
         result.Should().BeOfType<RedirectToActionResult>()
             .Which.ActionName.Should().Be(nameof(ExpensesController.Index));
@@ -135,11 +135,23 @@ public class ExpensesControllerTests
     {
         var sut = BuildController(_ => new HttpResponseMessage(HttpStatusCode.Forbidden));
 
-        var result = await sut.Reject(ExpenseId);
+        var result = await sut.Reject(ExpenseId, "Missing an itemized receipt.");
 
         result.Should().BeOfType<RedirectToActionResult>()
             .Which.ActionName.Should().Be(nameof(ExpensesController.Index));
         sut.TempData["Error"].Should().Be("You're not authorized to decide this expense.");
+    }
+
+    [Fact]
+    public async Task Reject_WithNoReason_SetsErrorMessage_AndDoesNotCallApi()
+    {
+        var sut = BuildController(_ => throw new InvalidOperationException("API should not be called."));
+
+        var result = await sut.Reject(ExpenseId, "   ");
+
+        result.Should().BeOfType<RedirectToActionResult>()
+            .Which.ActionName.Should().Be(nameof(ExpensesController.Index));
+        sut.TempData["Error"].Should().Be("A reason is required when rejecting an expense.");
     }
 
     [Fact]

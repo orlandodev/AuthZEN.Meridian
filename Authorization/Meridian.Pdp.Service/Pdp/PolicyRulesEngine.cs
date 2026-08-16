@@ -30,6 +30,7 @@ public sealed class PolicyRulesEngine(PolicyDbContext db, TimeProvider? timeProv
     {
         [("expense", "create")] = ExpenseRules.CanCreate,
         [("expense", "read")] = ExpenseRules.CanRead,
+        [("expense", "submit")] = ExpenseRules.CanSubmit,
         [("expense", "approve")] = ExpenseRules.CanDecide,
         [("expense", "reject")] = ExpenseRules.CanDecide,
         [("receipt", "read")] = ReceiptRules.CanRead,

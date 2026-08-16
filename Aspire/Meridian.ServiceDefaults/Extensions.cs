@@ -51,6 +51,19 @@ public static class Extensions
         return app;
     }
 
+    // Registers the plumbing BearerForwardingHandler needs. Callers then wire
+    // it onto a specific outgoing HttpClient with
+    // .AddHttpClient<TClient>(...).AddHttpMessageHandler<BearerForwardingHandler>() —
+    // see BearerForwardingHandler for what it does and why it's safe only for
+    // owner-scoped service-to-service calls.
+    public static TBuilder AddBearerForwarding<TBuilder>(this TBuilder builder)
+        where TBuilder : IHostApplicationBuilder
+    {
+        builder.Services.AddHttpContextAccessor();
+        builder.Services.AddTransient<BearerForwardingHandler>();
+        return builder;
+    }
+
     public static TBuilder ConfigureOpenTelemetry<TBuilder>(this TBuilder builder)
         where TBuilder : IHostApplicationBuilder
     {

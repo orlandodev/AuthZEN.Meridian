@@ -25,6 +25,18 @@ public class ReceiptsControllerTests
         }
         """;
 
+    // Draft + owned by the test's caller — irrelevant to most tests here (only
+    // ForExpense calls this), but must be a well-formed ExpenseDto so
+    // ForExpense's expense lookup succeeds by default.
+    private static string ExpenseJson(Guid id) => $$"""
+        {
+            "id": "{{id}}", "ownerUserId": "u-emma", "department": "Sales",
+            "amount": 100, "currency": "USD", "category": "Travel",
+            "status": 0, "approverUserId": null,
+            "createdAt": "2026-01-01T00:00:00+00:00", "decidedAt": null
+        }
+        """;
+
     private static IFormFile BuildFormFile()
     {
         var bytes = "fake-file-content"u8.ToArray();
@@ -35,11 +47,22 @@ public class ReceiptsControllerTests
         };
     }
 
-    private static ReceiptsController BuildController(Func<HttpRequestMessage, HttpResponseMessage> responder)
+    private static ReceiptsController BuildController(
+        Func<HttpRequestMessage, HttpResponseMessage> responder,
+        Func<HttpRequestMessage, HttpResponseMessage>? expensesResponder = null)
     {
         var client = FakeHttpMessageHandler.CreateClient(responder, out _);
-        var controller = new ReceiptsController(new ReceiptsApiClient(client));
-        controller.TempData = new TempDataDictionary(new DefaultHttpContext(), Mock.Of<ITempDataProvider>());
+        var expensesClient = FakeHttpMessageHandler.CreateClient(
+            expensesResponder ?? (_ => new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(ExpenseJson(ExpenseId))
+            }),
+            out _);
+        var controller = new ReceiptsController(new ReceiptsApiClient(client), new ExpensesApiClient(expensesClient));
+        // ForExpense reads User.FindFirst(...) directly, so ControllerContext.HttpContext
+        // (null by default in a bare controller instance) needs a real value here.
+        controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
+        controller.TempData = new TempDataDictionary(controller.HttpContext, Mock.Of<ITempDataProvider>());
         return controller;
     }
 

@@ -9,10 +9,6 @@ public interface IReceiptService
 
     Task<ReceiptDto?> GetMetadataByIdAsync(Guid id, CancellationToken ct);
 
-    // Unfiltered by caller — used only to establish the resource-based ownership
-    // check on upload (see ReceiptEndpoints.MapPost). Not for display.
-    Task<ReceiptDto?> GetAnyMetadataForExpenseAsync(Guid expenseId, CancellationToken ct);
-
     // Streams blob content back; null if the receipt or its blob no longer exists.
     Task<(Stream Content, string ContentType)?> DownloadAsync(Guid id, CancellationToken ct);
 
