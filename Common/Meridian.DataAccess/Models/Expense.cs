@@ -12,4 +12,5 @@ public class Expense
     public string? ApproverUserId { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? DecidedAt { get; set; }
+    public string? RejectionReason { get; set; }
 }

@@ -44,5 +44,6 @@ public static class AuthorizationTestData
             Status: status,
             ApproverUserId: null,
             CreatedAt: DateTimeOffset.UtcNow,
-            DecidedAt: null);
+            DecidedAt: null,
+            RejectionReason: null);
 }

@@ -132,15 +132,48 @@ public class ExpenseServiceTests
     }
 
     [Fact]
+    public async Task SubmitAsync_ReturnsNull_AndDoesNotReRead_WhenNoRowsWereUpdated()
+    {
+        var repository = new Mock<IExpenseRepository>();
+        repository.Setup(r => r.TrySubmitAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(0);
+        var sut = new ExpenseService(repository.Object);
+
+        var result = await sut.SubmitAsync(Guid.NewGuid(), CancellationToken.None);
+
+        result.Should().BeNull();
+        repository.Verify(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SubmitAsync_ReturnsTheSubmittedExpense_WhenTheUpdateApplied()
+    {
+        var expenseId = Guid.NewGuid();
+        var submitted = BuildExpense(status: ExpenseStatus.Submitted);
+        var repository = new Mock<IExpenseRepository>();
+        repository.Setup(r => r.TrySubmitAsync(expenseId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+        repository.Setup(r => r.GetByIdAsync(expenseId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(submitted);
+        var sut = new ExpenseService(repository.Object);
+
+        var result = await sut.SubmitAsync(expenseId, CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.Status.Should().Be(ExpenseStatus.Submitted);
+    }
+
+    [Fact]
     public async Task DecideAsync_ReturnsNull_AndDoesNotReRead_WhenNoRowsWereUpdated()
     {
         var repository = new Mock<IExpenseRepository>();
         repository.Setup(r => r.TryDecideAsync(
-                It.IsAny<Guid>(), It.IsAny<ExpenseStatus>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
+                It.IsAny<Guid>(), It.IsAny<ExpenseStatus>(), It.IsAny<string>(), It.IsAny<string?>(),
+                It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(0);
         var sut = new ExpenseService(repository.Object);
 
-        var result = await sut.DecideAsync(Guid.NewGuid(), ExpenseStatus.Approved, "u-priya", CancellationToken.None);
+        var result = await sut.DecideAsync(Guid.NewGuid(), ExpenseStatus.Approved, "u-priya", null, CancellationToken.None);
 
         result.Should().BeNull();
         repository.Verify(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -153,13 +186,14 @@ public class ExpenseServiceTests
         var decided = BuildExpense(status: ExpenseStatus.Approved);
         var repository = new Mock<IExpenseRepository>();
         repository.Setup(r => r.TryDecideAsync(
-                expenseId, ExpenseStatus.Approved, "u-priya", It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
+                expenseId, ExpenseStatus.Approved, "u-priya", It.IsAny<string?>(),
+                It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
         repository.Setup(r => r.GetByIdAsync(expenseId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(decided);
         var sut = new ExpenseService(repository.Object);
 
-        var result = await sut.DecideAsync(expenseId, ExpenseStatus.Approved, "u-priya", CancellationToken.None);
+        var result = await sut.DecideAsync(expenseId, ExpenseStatus.Approved, "u-priya", null, CancellationToken.None);
 
         result.Should().NotBeNull();
         result!.Status.Should().Be(ExpenseStatus.Approved);

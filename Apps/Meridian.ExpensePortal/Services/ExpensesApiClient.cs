@@ -40,22 +40,36 @@ public sealed class ExpensesApiClient(HttpClient http)
         var response = await http.PostAsJsonAsync("expenses", request, JsonOptions, ct);
         if (!response.IsSuccessStatusCode)
         {
-            var body = await response.Content.ReadAsStringAsync(ct);
-            return (false, null, string.IsNullOrWhiteSpace(body) ? response.ReasonPhrase : body);
+            return (false, null, await ApiErrorReader.ReadErrorMessageAsync(response, ct));
         }
 
         var expense = await response.Content.ReadFromJsonAsync<ExpenseDto>(JsonOptions, ct);
         return (true, expense, null);
     }
 
+    // Returns a friendly reason on failure instead of throwing, since a 400 here
+    // (zero receipts, wrong status) is an expected outcome the UI should display,
+    // not an exceptional one. The API's zero-receipt message comes back as a
+    // ProblemDetails title — see ApiErrorReader for how that's extracted.
+    public async Task<(bool Success, string? Error)> SubmitExpenseAsync(Guid id, CancellationToken ct = default)
+    {
+        var response = await http.PostAsync($"expenses/{id}/submit", content: null, ct);
+        if (response.IsSuccessStatusCode)
+        {
+            return (true, null);
+        }
+
+        return (false, await ApiErrorReader.ReadErrorMessageAsync(response, ct));
+    }
+
     // Returns a friendly reason on failure instead of throwing, since a 403 here
     // (over the manager approval limit, wrong role, etc.) is an expected outcome
     // the UI should display, not an exceptional one.
     public async Task<(bool Success, string? Error)> UpdateExpenseStatusAsync(
-        Guid id, ExpenseStatus status, CancellationToken ct = default)
+        Guid id, ExpenseStatus status, string? rejectionReason = null, CancellationToken ct = default)
     {
         var response = await http.PutAsJsonAsync(
-            $"expenses/{id}/status", new UpdateExpenseStatusRequest(status), JsonOptions, ct);
+            $"expenses/{id}/status", new UpdateExpenseStatusRequest(status, rejectionReason), JsonOptions, ct);
         if (response.IsSuccessStatusCode)
         {
             return (true, null);
@@ -66,7 +80,6 @@ public sealed class ExpensesApiClient(HttpClient http)
             return (false, "You're not authorized to decide this expense.");
         }
 
-        var body = await response.Content.ReadAsStringAsync(ct);
-        return (false, string.IsNullOrWhiteSpace(body) ? response.ReasonPhrase : body);
+        return (false, await ApiErrorReader.ReadErrorMessageAsync(response, ct));
     }
 }

@@ -1,5 +1,8 @@
 @model List<ReceiptDto>
-@{ var expenseId = (Guid)ViewBag.ExpenseId; }
+@{
+    var expenseId = (Guid)ViewBag.ExpenseId;
+    bool canUpload = ViewBag.CanUpload;
+}
 
 <h1>Receipts</h1>
 
@@ -36,11 +39,14 @@
     }
 </div>
 
-<h3>Upload a receipt</h3>
-<div class="card">
-    <form method="post" asp-controller="Receipts" asp-action="Upload" enctype="multipart/form-data">
-        <input type="hidden" name="expenseId" value="@expenseId" />
-        <div class="field"><label>File</label><input type="file" name="file" accept=".png,.jpg,.jpeg,.pdf,image/png,image/jpeg,application/pdf" /></div>
-        <button type="submit">Upload</button>
-    </form>
-</div>
+@if (canUpload)
+{
+    <h3>Upload a receipt</h3>
+    <div class="card">
+        <form method="post" asp-controller="Receipts" asp-action="Upload" enctype="multipart/form-data">
+            <input type="hidden" name="expenseId" value="@expenseId" />
+            <div class="field"><label>File</label><input type="file" name="file" accept=".png,.jpg,.jpeg,.pdf,image/png,image/jpeg,application/pdf" /></div>
+            <button type="submit">Upload</button>
+        </form>
+    </div>
+}

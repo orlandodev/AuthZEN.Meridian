@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Meridian.DataAccess.Models;
 using Meridian.Expenses.Api.Authorization;
+using Meridian.Expenses.Api.Services;
 using Meridian.Services;
 using Meridian.Services.Contracts;
 using Meridian.Services.DTOs;
@@ -63,6 +64,51 @@ public static class ExpenseEndpoints
             .WithDescription("Creates a Draft expense owned by the caller. Department is derived from the " +
                 "caller's own claim and is never accepted from the request body.");
 
+        // Submit: Draft -> Submitted, owner-only. Story 4.0's first real API-to-API
+        // call — blocks the transition if the expense has no receipts yet, by asking
+        // Receipts.Api (see ReceiptsLookupClient). Owner-only rather than routed
+        // through OwnerOrPrivilegedRequirement: Finance/Manager can view a submitted
+        // expense, but only the owner may ever submit one — delegated to the PDP via
+        // SubmitRequirement, same pattern as the status decision below.
+        group.MapPost("/{id:guid}/submit", async (Guid id, ClaimsPrincipal user,
+            IExpenseService expenses, IAuthorizationService authz, ReceiptsLookupClient receiptsLookup,
+            CancellationToken ct) =>
+        {
+            var existing = await expenses.GetByIdAsync(id, ct);
+            if (existing is null)
+            {
+                return Results.NotFound();
+            }
+
+            if (existing.Status != ExpenseStatus.Draft)
+            {
+                return Results.Problem(
+                    statusCode: StatusCodes.Status400BadRequest,
+                    title: "Only a Draft expense can be submitted.");
+            }
+
+            var result = await authz.AuthorizeAsync(user, existing, new SubmitRequirement());
+            if (!result.Succeeded)
+            {
+                return Results.Forbid();
+            }
+
+            if (!await receiptsLookup.HasAnyReceiptsAsync(id, ct))
+            {
+                return Results.Problem(
+                    statusCode: StatusCodes.Status400BadRequest,
+                    title: "Submit requires at least one receipt.");
+            }
+
+            var updated = await expenses.SubmitAsync(id, ct);
+            return updated is not null
+                ? Results.Ok(updated)
+                : Results.Conflict("Expense state changed; refresh and try again.");
+        })
+            .WithSummary("Submit a draft expense")
+            .WithDescription("Transitions a Draft expense owned by the caller to Submitted. Requires at " +
+                "least one receipt already attached.");
+
         // Decide (approve or reject): resource-based check, delegated to the PDP.
         group.MapPut("/{id:guid}/status", async (Guid id, UpdateExpenseStatusRequest request, ClaimsPrincipal user,
             IExpenseService expenses, IAuthorizationService authz, CancellationToken ct) =>
@@ -84,7 +130,7 @@ public static class ExpenseEndpoints
                 return Results.Forbid();
             }
 
-            var updated = await expenses.DecideAsync(id, request.Status, user.GetUserId()!, ct);
+            var updated = await expenses.DecideAsync(id, request.Status, user.GetUserId()!, request.RejectionReason, ct);
             return updated is not null
                 ? Results.Ok(updated)
                 : Results.Conflict("Expense state changed; refresh and try again.");

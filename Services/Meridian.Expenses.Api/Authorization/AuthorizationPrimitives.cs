@@ -13,6 +13,10 @@ public static class Policies
 // Delegated to the PDP as ("expense", "read") — see OwnerOrPrivilegedHandler.
 public sealed class OwnerOrPrivilegedRequirement : IAuthorizationRequirement;
 
+// ---- Submit decision, delegated to the PDP as ("expense", "submit") ----
+// Owner-only — no manager/finance carve-out (see ExpenseRules.CanSubmit).
+public sealed class SubmitRequirement : IAuthorizationRequirement;
+
 // ---- Approve/reject decision, delegated to the PDP as ("expense", "approve"|"reject") ----
 // Carries the caller's intended outcome so the handler knows which PDP action
 // to evaluate; the amount limit itself now lives in the PDP's policy database

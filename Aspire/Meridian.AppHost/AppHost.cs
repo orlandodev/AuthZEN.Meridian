@@ -50,15 +50,14 @@ var pdp = builder.AddProject<Projects.Meridian_Pdp_Service>("pdp")
 // Expenses.Api is a PEP as of Stage 3: it delegates authorization decisions
 // to the PDP instead of enforcing in-process. Receipts and Reporting still
 // enforce in-process until Stage 4.
-var expensesApi = builder.AddProject<Projects.Meridian_Expenses_Api>("expenses-api")
-                .WithUrlForEndpoint("https", url => url.DisplayText = "Expenses API - Scalar")
-                .WithReference(expensesDb)
-                .WithReference(identity)
-                .WithReference(pdp)
-                .WithEnvironment("Pep__ClientSecret", pepClientSecret)
-                .WaitFor(expensesDb)
-                .WaitFor(pdp);
-
+//
+// Story 4.0 adds two owner-scoped, bearer-forwarded inter-service calls:
+// Expenses.Api -> Receipts.Api (blocking Submit on zero receipts) and
+// Receipts.Api -> Expenses.Api (looking up the parent expense's owner/status
+// to authorize upload). Declare receiptsApi first so expensesApi can
+// reference it inline; the reverse reference is added below once expensesApi
+// exists — Aspire resource references don't need to be declared in a single
+// fluent chain.
 var receiptsApi = builder.AddProject<Projects.Meridian_Receipts_Api>("receipts-api")
                 .WithUrlForEndpoint("https", url => url.DisplayText = "Receipts API - Scalar")
                 .WithReference(receiptsDb)
@@ -66,6 +65,18 @@ var receiptsApi = builder.AddProject<Projects.Meridian_Receipts_Api>("receipts-a
                 .WithReference(receiptBlobs)
                 .WaitFor(receiptsDb)
                 .WaitFor(receiptBlobs);
+
+var expensesApi = builder.AddProject<Projects.Meridian_Expenses_Api>("expenses-api")
+                .WithUrlForEndpoint("https", url => url.DisplayText = "Expenses API - Scalar")
+                .WithReference(expensesDb)
+                .WithReference(identity)
+                .WithReference(pdp)
+                .WithReference(receiptsApi)
+                .WithEnvironment("Pep__ClientSecret", pepClientSecret)
+                .WaitFor(expensesDb)
+                .WaitFor(pdp);
+
+receiptsApi.WithReference(expensesApi);
 
 var reportingApi = builder.AddProject<Projects.Meridian_Reporting_Api>("reporting-api")
                 .WithUrlForEndpoint("https", url => url.DisplayText = "Reporting API - Scalar")

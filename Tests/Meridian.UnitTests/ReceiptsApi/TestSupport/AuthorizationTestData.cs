@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Meridian.DataAccess.Models;
 using Meridian.Services.DTOs;
 
 namespace Meridian.UnitTests.ReceiptsApi.TestSupport;
@@ -38,4 +39,21 @@ public static class AuthorizationTestData
             FileName: "receipt.jpg",
             ContentType: "image/jpeg",
             UploadedAt: DateTimeOffset.UtcNow);
+
+    // Story 4.0: UploadEligibilityHandler checks the parent Expense (fetched from
+    // Expenses.Api), not a Receipt — this is the DTO that crosses that boundary.
+    public static ExpenseDto BuildExpense(
+        string ownerUserId = OwnerUserId, ExpenseStatus status = ExpenseStatus.Draft) =>
+        new(
+            Id: Guid.NewGuid(),
+            OwnerUserId: ownerUserId,
+            Department: Department,
+            Amount: 100m,
+            Currency: "USD",
+            Category: "Test",
+            Status: status,
+            ApproverUserId: null,
+            CreatedAt: DateTimeOffset.UtcNow,
+            DecidedAt: null,
+            RejectionReason: null);
 }

@@ -35,8 +35,7 @@ public sealed class ReceiptsApiClient(HttpClient http)
         var response = await http.PostAsync("receipts", content, ct);
         if (!response.IsSuccessStatusCode)
         {
-            var body = await response.Content.ReadAsStringAsync(ct);
-            return (false, null, string.IsNullOrWhiteSpace(body) ? response.ReasonPhrase : body);
+            return (false, null, await ApiErrorReader.ReadErrorMessageAsync(response, ct));
         }
 
         var receipt = await response.Content.ReadFromJsonAsync<ReceiptDto>(JsonOptions, ct);

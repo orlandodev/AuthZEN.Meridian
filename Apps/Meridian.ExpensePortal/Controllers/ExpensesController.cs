@@ -59,6 +59,20 @@ public class ExpensesController(ExpensesApiClient expensesApi) : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Submit(Guid id)
+    {
+        var (success, error) = await expensesApi.SubmitExpenseAsync(id);
+
+        if (!success)
+        {
+            TempData["Error"] = error;
+        }
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Approve(Guid id)
     {
         var (success, error) = await expensesApi.UpdateExpenseStatusAsync(id, ExpenseStatus.Approved);
@@ -73,9 +87,17 @@ public class ExpensesController(ExpensesApiClient expensesApi) : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Reject(Guid id)
+    public async Task<IActionResult> Reject(Guid id, string rejectionReason)
     {
-        var (success, error) = await expensesApi.UpdateExpenseStatusAsync(id, ExpenseStatus.Rejected);
+        // Client-side <textarea required> is UX only — the API re-validates this via
+        // UpdateExpenseStatusRequest.Validate(), same split as everything else here.
+        if (string.IsNullOrWhiteSpace(rejectionReason))
+        {
+            TempData["Error"] = "A reason is required when rejecting an expense.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var (success, error) = await expensesApi.UpdateExpenseStatusAsync(id, ExpenseStatus.Rejected, rejectionReason);
 
         if (!success)
         {

@@ -95,6 +95,21 @@ public class ExpensesApiPdpIntegrationTests(ExpensesPdpFixture fixture) : IClass
     }
 
     [Fact]
+    public async Task Submit_NonOwner_Returns403()
+    {
+        // Proves Submit's owner check now genuinely travels Expenses.Api -> PDP ->
+        // back, same as Read/Decide. u-mateo has no relation to u-emma's draft, so
+        // this is denied before ever reaching the receipt-count check — meaning it
+        // doesn't need Receipts.Api (not stood up in this fixture) to prove the
+        // point.
+        var client = CreateClient("u-mateo", Roles.Employee, "Sales");
+
+        var response = await client.PostAsync($"/expenses/{EmmaDraftExpenseId}/submit", content: null);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
     public async Task Approve_ManagerUnderLimit_Returns200()
     {
         var client = CreateClient("u-nadia", Roles.Manager, "Sales");
@@ -125,7 +140,7 @@ public class ExpensesApiPdpIntegrationTests(ExpensesPdpFixture fixture) : IClass
 
         var response = await client.PutAsJsonAsync(
             $"/expenses/{ExpensesPdpFixture.FinanceApprovesAnyAmountExpenseId}/status",
-            new UpdateExpenseStatusRequest(ExpenseStatus.Rejected));
+            new UpdateExpenseStatusRequest(ExpenseStatus.Rejected, "Missing an itemized receipt."));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }

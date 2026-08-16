@@ -19,7 +19,8 @@ public sealed record ExpenseDto(
     ExpenseStatus Status,
     string? ApproverUserId,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? DecidedAt);
+    DateTimeOffset? DecidedAt,
+    string? RejectionReason);
 
 // Department is derived server-side from the caller's own claim, not sent by
 // the client. Validation attributes target the constructor parameter
@@ -30,4 +31,5 @@ public sealed record CreateExpenseRequest(
     [Required, MaxLength(100)] string Category);
 
 // Status is either Approved or Rejected; the API rejects anything else.
-public sealed record UpdateExpenseStatusRequest(ExpenseStatus Status);
+// RejectionReason is required when rejecting — the API re-validates this too.
+public sealed record UpdateExpenseStatusRequest(ExpenseStatus Status, string? RejectionReason = null);

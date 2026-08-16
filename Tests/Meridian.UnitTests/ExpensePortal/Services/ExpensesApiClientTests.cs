@@ -173,6 +173,65 @@ public class ExpensesApiClientTests
     }
 
     [Fact]
+    public async Task UpdateExpenseStatusAsync_ExtractsTitle_FromProblemDetailsBody()
+    {
+        const string problemDetails = """
+            {"type":"https://tools.ietf.org/html/rfc9110#section-15.5.1","title":"Only a Submitted expense can be decided.","status":400}
+            """;
+        var client = FakeHttpMessageHandler.CreateClient(
+            _ => new HttpResponseMessage(HttpStatusCode.BadRequest)
+            {
+                Content = new StringContent(problemDetails, System.Text.Encoding.UTF8, "application/problem+json")
+            },
+            out _);
+        var sut = new ExpensesApiClient(client);
+
+        var (success, error) = await sut.UpdateExpenseStatusAsync(ExpenseId, ExpenseStatus.Approved);
+
+        success.Should().BeFalse();
+        error.Should().Be("Only a Submitted expense can be decided.");
+    }
+
+    [Fact]
+    public async Task UpdateExpenseStatusAsync_ExtractsFieldMessages_FromValidationProblemDetailsBody()
+    {
+        const string validationProblem = """
+            {"type":"https://tools.ietf.org/html/rfc9110#section-15.5.1","title":"One or more validation errors occurred.","status":400,
+             "errors":{"RejectionReason":["A reason is required when rejecting an expense."]}}
+            """;
+        var client = FakeHttpMessageHandler.CreateClient(
+            _ => new HttpResponseMessage(HttpStatusCode.BadRequest)
+            {
+                Content = new StringContent(validationProblem, System.Text.Encoding.UTF8, "application/problem+json")
+            },
+            out _);
+        var sut = new ExpensesApiClient(client);
+
+        var (success, error) = await sut.UpdateExpenseStatusAsync(ExpenseId, ExpenseStatus.Rejected, "");
+
+        success.Should().BeFalse();
+        error.Should().Be("A reason is required when rejecting an expense.");
+    }
+
+    [Fact]
+    public async Task UpdateExpenseStatusAsync_UnquotesBareJsonStringBody()
+    {
+        const string message = "Only a Draft expense can be submitted.";
+        var client = FakeHttpMessageHandler.CreateClient(
+            _ => new HttpResponseMessage(HttpStatusCode.BadRequest)
+            {
+                Content = new StringContent($"\"{message}\"", System.Text.Encoding.UTF8, "application/json")
+            },
+            out _);
+        var sut = new ExpensesApiClient(client);
+
+        var (success, error) = await sut.UpdateExpenseStatusAsync(ExpenseId, ExpenseStatus.Approved);
+
+        success.Should().BeFalse();
+        error.Should().Be(message);
+    }
+
+    [Fact]
     public async Task UpdateExpenseStatusAsync_FallsBackToReasonPhrase_WhenBodyIsEmpty()
     {
         var client = FakeHttpMessageHandler.CreateClient(
