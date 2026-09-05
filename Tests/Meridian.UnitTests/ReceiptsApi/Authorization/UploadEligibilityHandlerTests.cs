@@ -1,3 +1,5 @@
+using AuthZen.Contracts;
+using AuthZen.Pep;
 using Meridian.DataAccess.Models;
 using Meridian.Receipts.Api.Authorization;
 using Meridian.Services;
@@ -8,54 +10,73 @@ using static Meridian.UnitTests.ReceiptsApi.TestSupport.AuthorizationTestData;
 
 namespace Meridian.UnitTests.ReceiptsApi.Authorization;
 
+// Stage 4 (Story 4.1): the owner+Draft matrix this class used to cover
+// now lives in the PDP itself (see RulesEngineTests' Receipt_Create_* cases).
+// This handler's own job is narrower: build the right SARC request — with no
+// resource id, since no Receipt exists yet at upload time — and honor
+// whatever the PDP decides.
 public class UploadEligibilityHandlerTests
 {
-    private readonly UploadEligibilityHandler _sut = new();
-
-    private async Task<bool> SucceedsAsync(ClaimsPrincipal user, ExpenseDto resource)
+    private static async Task<AuthorizationHandlerContext> RunAsync(
+        ClaimsPrincipal user, ExpenseDto resource, IPolicyDecisionClient pdp)
     {
+        var sut = new UploadEligibilityHandler(pdp);
         var context = new AuthorizationHandlerContext([new UploadEligibilityRequirement()], user, resource);
-        await _sut.HandleAsync(context);
-        return context.HasSucceeded;
+        await sut.HandleAsync(context);
+        return context;
     }
 
     [Fact]
-    public async Task Owner_OnDraftExpense_Succeeds()
+    public async Task Succeeds_WhenPdpPermits()
     {
+        var pdp = new Mock<IPolicyDecisionClient>();
+        pdp.Setup(p => p.IsAllowedAsync(It.IsAny<AccessEvaluationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
         var user = BuildUser(userId: OwnerUserId, role: Roles.Employee);
         var expense = BuildExpense(ownerUserId: OwnerUserId, status: ExpenseStatus.Draft);
 
-        (await SucceedsAsync(user, expense)).Should().BeTrue();
+        var context = await RunAsync(user, expense, pdp.Object);
+
+        context.HasSucceeded.Should().BeTrue();
     }
 
     [Fact]
-    public async Task Owner_OnSubmittedExpense_Fails()
+    public async Task Fails_WhenPdpDenies()
     {
-        // Owner-only isn't enough on its own — upload closes once the expense
-        // leaves Draft, even for its own owner.
-        var user = BuildUser(userId: OwnerUserId, role: Roles.Employee);
-        var expense = BuildExpense(ownerUserId: OwnerUserId, status: ExpenseStatus.Submitted);
+        var pdp = new Mock<IPolicyDecisionClient>();
+        pdp.Setup(p => p.IsAllowedAsync(It.IsAny<AccessEvaluationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
 
-        (await SucceedsAsync(user, expense)).Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task NonOwnerEmployee_OnDraftExpense_Fails()
-    {
         var user = BuildUser(userId: OtherUserId, role: Roles.Employee, department: Department);
         var expense = BuildExpense(ownerUserId: OwnerUserId, status: ExpenseStatus.Draft);
 
-        (await SucceedsAsync(user, expense)).Should().BeFalse();
+        var context = await RunAsync(user, expense, pdp.Object);
+
+        context.HasSucceeded.Should().BeFalse();
     }
 
-    // Unlike OwnerOrPrivilegedRequirement, Finance gets no carve-out here —
-    // Manager and Finance can never upload, at any status, per Story 4.0.
     [Fact]
-    public async Task Finance_OnDraftExpense_Fails()
+    public async Task BuildsSarcRequest_WithNoResourceId_FromExpenseOwnerAndStatus()
     {
-        var user = BuildUser(userId: OtherUserId, role: Roles.Finance);
+        AccessEvaluationRequest? captured = null;
+        var pdp = new Mock<IPolicyDecisionClient>();
+        pdp.Setup(p => p.IsAllowedAsync(It.IsAny<AccessEvaluationRequest>(), It.IsAny<CancellationToken>()))
+            .Callback<AccessEvaluationRequest, CancellationToken>((request, _) => captured = request)
+            .ReturnsAsync(true);
+
+        var user = BuildUser(userId: OwnerUserId, role: Roles.Employee);
         var expense = BuildExpense(ownerUserId: OwnerUserId, status: ExpenseStatus.Draft);
 
-        (await SucceedsAsync(user, expense)).Should().BeFalse();
+        await RunAsync(user, expense, pdp.Object);
+
+        captured.Should().NotBeNull();
+        captured!.Subject.Id.Should().Be(OwnerUserId);
+        captured.Action.Name.Should().Be("create");
+        captured.Resource.Type.Should().Be("receipt");
+        captured.Resource.Id.Should().BeNull();
+        captured.Resource.Properties.Should().NotBeNull();
+        captured.Resource.Properties!["ownerId"].Should().Be(OwnerUserId);
+        captured.Resource.Properties!["status"].Should().Be(ExpenseStatus.Draft.ToString());
     }
 }

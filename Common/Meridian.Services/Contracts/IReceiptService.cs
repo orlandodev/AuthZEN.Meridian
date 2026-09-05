@@ -4,7 +4,9 @@ namespace Meridian.Services.Contracts;
 
 public interface IReceiptService
 {
-    // Finance sees every receipt for the expense; everyone else sees only their own.
+    // Finance and managers see every receipt for the expense (managers'
+    // candidates are then narrowed to a genuine ManagerOf relationship by
+    // Receipts.Api's ReceiptVisibilityFilter); everyone else sees only their own.
     Task<IReadOnlyList<ReceiptDto>> GetForExpenseAsync(Guid expenseId, CallerContext caller, CancellationToken ct);
 
     Task<ReceiptDto?> GetMetadataByIdAsync(Guid id, CancellationToken ct);

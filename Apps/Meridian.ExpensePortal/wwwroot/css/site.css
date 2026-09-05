@@ -217,12 +217,29 @@ input[type="text"], input[type="number"], input:not([type]) {
   border-radius: var(--radius);
   font-family: var(--font-ui);
   font-size: 0.95rem;
+  color: var(--color-ink);
 }
-input:focus {
+input:focus, textarea:focus {
   outline: 2px solid var(--color-accent);
   outline-offset: 1px;
 }
 .field { margin-bottom: 14px; }
+
+/* Fixed (not 100%) width: this textarea lives inline next to a button in a
+   narrow table cell, not stacked in a labeled .field like the inputs above —
+   width:100% there would fight the flex row for space and force a wrap. */
+textarea {
+  width: 130px;
+  padding: 7px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  color: var(--color-ink);
+  min-height: 34px;
+  resize: vertical;
+  vertical-align: middle;
+}
 
 button, .btn {
   display: inline-block;
@@ -252,6 +269,22 @@ button.link {
   padding: 0;
   font-weight: 400;
   cursor: pointer;
+}
+
+/* ---- Row actions: several small forms (Approve, Reject, Submit) sitting
+   side by side in one table cell — without this they stack as separate
+   block-level <form>s with mismatched browser default spacing. ---- */
+.row-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.row-actions form {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
 }
 
 /* ---- Diagnostics ---- */

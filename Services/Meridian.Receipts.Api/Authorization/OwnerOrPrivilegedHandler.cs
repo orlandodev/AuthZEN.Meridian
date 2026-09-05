@@ -1,29 +1,31 @@
-using Meridian.Services;
+using AuthZen.Pep;
 using Meridian.Services.DTOs;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Meridian.Receipts.Api.Authorization;
 
-public sealed class OwnerOrPrivilegedHandler
+// Stage 4 (Story 4.1): delegates the ownership/read decision to the PDP
+// instead of enforcing in-process. The manager-of branch this API's own check
+// never had (see AuthorizationPrimitives.cs — Receipt has no Department field
+// to key off) now applies here too, via ReceiptRules.CanRead: the Stage 1
+// drift is gone.
+public sealed class OwnerOrPrivilegedHandler(IPolicyDecisionClient pdp)
     : AuthorizationHandler<OwnerOrPrivilegedRequirement, ReceiptDto>
 {
-    protected override Task HandleRequirementAsync(
+    protected override async Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
         OwnerOrPrivilegedRequirement requirement,
         ReceiptDto resource)
     {
-        var isOwner = context.User.GetUserId() == resource.OwnerUserId;
-        var isFinance = context.User.IsInRole(Roles.Finance);
+        var request = ReceiptAccessRequestFactory.Build(
+            context.User,
+            "read",
+            resource.Id.ToString(),
+            new Dictionary<string, object> { ["ownerId"] = resource.OwnerUserId });
 
-        // Stage 1 (deliberate drift): Expenses.Api's OwnerOrPrivilegedHandler also
-        // allows a manager in the same department — never copied here, and
-        // structurally can't be, since Receipt has no Department field. A manager
-        // who can open the Expense via Expenses.Api gets 403 here on its Receipt.
-        if (isOwner || isFinance)
+        if (await pdp.IsAllowedAsync(request))
         {
             context.Succeed(requirement);
         }
-
-        return Task.CompletedTask;
     }
 }

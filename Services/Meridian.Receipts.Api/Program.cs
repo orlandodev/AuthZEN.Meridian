@@ -1,3 +1,4 @@
+using AuthZen.Pep;
 using Meridian.DataAccess;
 using Meridian.DataAccess.Receipts;
 using Meridian.Receipts.Api.Authorization;
@@ -27,10 +28,22 @@ builder.Services.AddValidation();
 // --- Authentication: validate JWTs issued by the Duende IdentityServer ---
 builder.AddMeridianApiAuthentication(audience: "meridian.receipts.api");
 
-// --- Authorization (Stage 1: duplicated from Expenses.Api, deliberately incomplete) ---
+// --- PEP: Stage 4 (Story 4.1) — this API delegates authorization decisions
+// to the PDP instead of enforcing in-process, same as Expenses.Api since
+// Stage 3. Authenticates to the PDP as itself via client credentials — see
+// the shared "meridian.pep" client in IdentityServer's Config.cs.
+builder.Services.AddAuthZenPep(
+    pdpBaseAddress: "https+http://pdp",
+    identityServerTokenEndpoint: "https+http://identityserver/connect/token",
+    clientId: "meridian.pep",
+    clientSecret: builder.Configuration["Pep:ClientSecret"]
+        ?? throw new InvalidOperationException("Missing configuration: Pep:ClientSecret"));
+
+// --- Authorization ---
 builder.Services.AddAuthorization();
-builder.Services.AddSingleton<IAuthorizationHandler, OwnerOrPrivilegedHandler>();
-builder.Services.AddSingleton<IAuthorizationHandler, UploadEligibilityHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, OwnerOrPrivilegedHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, UploadEligibilityHandler>();
+builder.Services.AddScoped<ReceiptVisibilityFilter>();
 
 // Story 4.0: looks up the parent expense's owner/status to authorize upload —
 // see ExpensesLookupClient and BearerForwardingHandler.
@@ -62,3 +75,11 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+
+// Top-level statements generate an internal Program class by default,
+// invisible outside this assembly. Re-opening it as public here lets
+// Meridian.IntegrationTests use WebApplicationFactory<Program> to host this
+// app's real startup pipeline in-process, chained against a real (also
+// in-process) Pdp.Service — see Meridian.Expenses.Api/Program.cs for the same
+// pattern.
+public partial class Program;

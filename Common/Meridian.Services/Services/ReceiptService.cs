@@ -25,7 +25,16 @@ public sealed class ReceiptService(IReceiptRepository repository, IReceiptBlobSt
     public async Task<IReadOnlyList<ReceiptDto>> GetForExpenseAsync(Guid expenseId, CallerContext caller, CancellationToken ct)
     {
         var receipts = await repository.GetByExpenseIdAsync(expenseId, ct);
-        var visible = caller.IsFinance ? receipts : receipts.Where(r => r.OwnerUserId == caller.UserId);
+        // Manager candidates are deliberately over-inclusive here (every
+        // receipt on the expense, same as Finance) — Receipts.Api's
+        // ReceiptVisibilityFilter narrows this down to a genuine ManagerOf
+        // relationship via the PDP, the same way Expenses.Api's
+        // ExpenseVisibilityFilter narrows ExpenseService's department-based
+        // candidates. Callers that bypass that filter and call this method
+        // directly get the unnarrowed (over-broad) set.
+        var visible = (caller.IsFinance || caller.IsManager)
+            ? receipts
+            : receipts.Where(r => r.OwnerUserId == caller.UserId);
         return visible.Select(r => r.ToDto()).ToList();
     }
 

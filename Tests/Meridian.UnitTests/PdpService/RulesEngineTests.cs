@@ -356,6 +356,84 @@ public class RulesEngineTests
         (await engine.EvaluateAsync(request)).Should().BeFalse();
     }
 
+    [Fact]
+    public async Task Receipt_Read_ManagerNotManagerOf_Denied()
+    {
+        // A genuine Manager role isn't enough on its own — u-nadia only
+        // manages u-emma and u-mateo, not u-finn — mirrors
+        // Expense_Read_ManagerNotManagerOf_Denied above so the manager-of
+        // branch's negative case is covered for receipts too, not just its
+        // positive case (Receipt_Read_ManagerOfOwner_Allowed).
+        using var db = PolicyDbContextTestFactory.Create();
+        var engine = new PolicyRulesEngine(db);
+
+        var request = RequestFactory.ReceiptRequest("u-nadia", ownerId: "u-finn");
+
+        (await engine.EvaluateAsync(request)).Should().BeFalse();
+    }
+
+    // ---- receipt / create ----
+
+    [Fact]
+    public async Task Receipt_Create_Owner_Draft_Allowed()
+    {
+        using var db = PolicyDbContextTestFactory.Create();
+        var engine = new PolicyRulesEngine(db);
+
+        var request = RequestFactory.ReceiptCreateRequest("u-emma", ownerId: "u-emma", status: "Draft");
+
+        (await engine.EvaluateAsync(request)).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Receipt_Create_Owner_Submitted_Denied()
+    {
+        // Upload closes once the expense leaves Draft, even for its own owner —
+        // narrower than Receipt_Read, which has no status gate at all.
+        using var db = PolicyDbContextTestFactory.Create();
+        var engine = new PolicyRulesEngine(db);
+
+        var request = RequestFactory.ReceiptCreateRequest("u-emma", ownerId: "u-emma", status: "Submitted");
+
+        (await engine.EvaluateAsync(request)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Receipt_Create_NonOwnerEmployee_Denied()
+    {
+        using var db = PolicyDbContextTestFactory.Create();
+        var engine = new PolicyRulesEngine(db);
+
+        var request = RequestFactory.ReceiptCreateRequest("u-mateo", ownerId: "u-emma", status: "Draft");
+
+        (await engine.EvaluateAsync(request)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Receipt_Create_Finance_Denied()
+    {
+        // Unlike Receipt_Read, Finance gets no carve-out — only the literal
+        // owner may ever upload, per Story 4.0's fix.
+        using var db = PolicyDbContextTestFactory.Create();
+        var engine = new PolicyRulesEngine(db);
+
+        var request = RequestFactory.ReceiptCreateRequest("u-finn", ownerId: "u-emma", status: "Draft");
+
+        (await engine.EvaluateAsync(request)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Receipt_Create_ManagerOfOwner_Denied()
+    {
+        // Unlike Receipt_Read, a manager-of relationship gives no carve-out either.
+        using var db = PolicyDbContextTestFactory.Create();
+        var engine = new PolicyRulesEngine(db);
+
+        var request = RequestFactory.ReceiptCreateRequest("u-nadia", ownerId: "u-emma", status: "Draft");
+
+        (await engine.EvaluateAsync(request)).Should().BeFalse();
+    }
+
     // ---- department_spend / read, export ----
 
     [Fact]
