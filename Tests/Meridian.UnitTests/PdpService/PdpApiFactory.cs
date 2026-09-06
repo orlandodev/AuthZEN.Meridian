@@ -27,6 +27,9 @@ public sealed class PdpApiFactory : WebApplicationFactory<PdpServiceAssembly::Pr
         // with the InMemory provider immediately after.
         builder.UseSetting("ConnectionStrings:policydb", "Host=localhost;Database=policydb-test;Username=postgres;Password=postgres");
 
+        // Required by Program.cs (no fallback).
+        builder.UseSetting("BusinessHours:TimeZone", "America/New_York");
+
         builder.ConfigureTestServices(services =>
         {
             // Aspire's AddNpgsqlDbContext registers pooling infrastructure

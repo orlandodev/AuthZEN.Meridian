@@ -9,11 +9,12 @@ namespace Meridian.ExpensePortal.Controllers;
 // enforces the real check: finance sees every department, a manager sees
 // only their own, an employee is denied outright.
 [Authorize(Roles = "manager,finance")]
-public class ReportsController(ReportingApiClient reportingApi) : Controller
+public class ReportsController(ReportingApiClient reportingApi, IConfiguration configuration) : Controller
 {
     public async Task<IActionResult> Index()
     {
         var summaries = await reportingApi.GetDepartmentSpendAsync();
+        ViewData["ExportWindow"] = BuildExportWindowText();
         return View(summaries);
     }
 
@@ -29,5 +30,23 @@ public class ReportsController(ReportingApiClient reportingApi) : Controller
             return RedirectToAction(nameof(Index));
         }
         return File(content, "text/csv", "department-spend.csv");
+    }
+
+    // The window itself is enforced by the PDP (DepartmentSpendRules.CanExport);
+    // this only names the same timezone the PDP is configured with — see
+    // BusinessHours:TimeZone, set by the AppHost — so the displayed hours can't
+    // drift from the enforced ones. Required, same as on the PDP: a missing key
+    // is a misconfiguration, not something to paper over with a default.
+    private string BuildExportWindowText()
+    {
+        var timeZoneId = configuration["BusinessHours:TimeZone"];
+        if (string.IsNullOrWhiteSpace(timeZoneId))
+        {
+            throw new InvalidOperationException("Missing configuration: BusinessHours:TimeZone");
+        }
+
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+        var label = timeZone.StandardName.Replace(" Standard Time", " Time");
+        return $"Monday–Friday, 9:00 AM–5:00 PM {label}";
     }
 }

@@ -4,11 +4,11 @@ using Meridian.Pdp.Service.Pdp;
 
 namespace Meridian.Pdp.Service.Reporting;
 
-// Replicates Meridian.Reporting.Api's CanViewDepartmentSpend (manager or
-// finance, department-scoped in ReportingService.GetDepartmentSpendAsync)
-// and CanExportDepartmentSpend (finance only, additionally gated by
-// BusinessHoursPolicy in ReportingEndpoints.cs — replicated here too, in
-// that same order: role first, then the time-of-day gate).
+// The department-spend read and export decisions Reporting.Api delegates here
+// (see DepartmentSpendReadFilter / DepartmentSpendExportFilter). Read is
+// manager-or-finance, department-scoped for managers; the per-row scoping
+// still runs in ReportingService.GetDepartmentSpendAsync. Export is
+// finance-only, then the business-hours gate — role first, time-of-day second.
 public static class DepartmentSpendRules
 {
     public static async Task<bool> CanRead(AccessEvaluationRequest request, RuleWorkspace ws, CancellationToken ct)
@@ -42,6 +42,9 @@ public static class DepartmentSpendRules
             return false;
         }
 
-        return BusinessHoursPolicy.IsWithinBusinessHours(ws.TimeProvider);
+        var businessTimeZone = ws.BusinessTimeZone
+            ?? throw new InvalidOperationException(
+                "No business timezone configured; set BusinessHours:TimeZone (see Pdp.Service Program.cs).");
+        return BusinessHoursPolicy.IsWithinBusinessHours(ws.TimeProvider, businessTimeZone);
     }
 }
