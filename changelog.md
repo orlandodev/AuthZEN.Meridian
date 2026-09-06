@@ -393,14 +393,12 @@ to a PEP; Story 4.2 (pending) converts `Reporting.Api`.
 > Replaces both the CanExportDepartmentSpend role policy and the in-process
 > BusinessHoursPolicy branch that used to sit inside the export handler: a
 > single ("department_spend", "export") evaluation now covers finance-only
-> access and the Monday-Friday 9am-5pm window together
+> access and the Monday-Friday 9am-5pm UTC window together
 > (DepartmentSpendRules.CanExport). This is the story's payoff — an ABAC rule
 > that was a C# `if` in Stage 1 is now data the PDP reasons about. The time is
 > the PDP's own, never carried in the request, so a PEP cannot widen the
 > window by lying about the clock (see the PDP's own BusinessHoursPolicy
 > comment); a denial collapses to one 403 regardless of which half failed.
-> (Story 4.2 landed this window in UTC; the follow-up entry below moves it
-> into the organization's configured business timezone.)
 
 `Services/Meridian.Reporting.Api/Authorization/DepartmentSpendExportFilter.cs` — `DepartmentSpendExportFilter` · _retrospective_ (Stage 1, Stage 4 / Story 4.2)
 
@@ -428,40 +426,10 @@ to a PEP; Story 4.2 (pending) converts `Reporting.Api`.
 
 ### Reporting.Api filter unit tests replace BusinessHoursPolicyTests (Story 4.2)
 > `BusinessHoursPolicyTests` is deleted with the class it covered; the Mon-Fri
-> 9am-5pm window now lives in the PDP's own RulesEngineTests
+> 9am-5pm UTC window now lives in the PDP's own RulesEngineTests
 > (DepartmentSpend_Export_* cases). The new DepartmentSpendReadFilterTests /
 > DepartmentSpendExportFilterTests are narrower, like the Story 4.1 handler
 > tests: build the right SARC request and honor whatever the PDP decides.
-
-### Export window is evaluated in a configured business timezone, not UTC (feature/reporting-timezone-config)
-> `DepartmentSpendRules.CanExport`'s Monday-Friday 9am-5pm gate is checked in
-> the organization's business timezone rather than in UTC, so it tracks DST
-> automatically. The zone id is required config with no fallback:
-> `BusinessHours:TimeZone` lives in the AppHost's `appsettings.json`
-> (`America/New_York`), which injects it to the PDP and the Portal; the PDP
-> throws at startup if it is missing, and `DepartmentSpendRules.CanExport`
-> throws rather than proceed without a zone. Still the PDP's own clock: only
-> the *zone* is configuration, never a caller-supplied attribute, so the
-> trusted-clock guarantee is unchanged. `BusinessHoursPolicy.IsWithinBusinessHours`
-> takes a `TimeZoneInfo`; `RuleWorkspace` carries it; `PolicyRulesEngine`
-> threads it through an optional ctor param (mirroring its `TimeProvider?`
-> one — null only in tests that don't touch export). New RulesEngineTests
-> cases prove the zone matters (inside 9-5 UTC but before 9am Eastern →
-> denied), that the window follows the zone's DST offset, and that a missing
-> zone throws.
-
-`Authorization/Meridian.Pdp.Service/Reporting/BusinessHoursPolicy.cs` — `BusinessHoursPolicy.IsWithinBusinessHours` · _retrospective_
-
-### Portal names the export window instead of describing enforcement (feature/reporting-timezone-config)
-> The Reports page hint dropped its "enforced by the PDP in Stage 4, and
-> imperatively in Stage 1" phrasing — internal narrative that shouldn't face
-> users — for "CSV export is available Monday–Friday, 9:00 AM–5:00 PM Eastern
-> Time." The timezone label is derived from the same `BusinessHours:TimeZone`
-> the PDP enforces with (injected to the Portal by the AppHost), so the shown
-> hours can't drift from the enforced ones. A Razor comment points at
-> `DepartmentSpendExportFilter` for the enforcement path.
-
-`Apps/Meridian.ExpensePortal/Controllers/ReportsController.cs` — `ReportsController.BuildExportWindowText` · _retrospective_
 
 `Tests/Meridian.UnitTests/ReportingApi/Authorization/` — `DepartmentSpendReadFilterTests`, `DepartmentSpendExportFilterTests` · _retrospective_
 

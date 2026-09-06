@@ -33,7 +33,6 @@
     }
 </div>
 
-@* The export window is enforced by the Reporting API's DepartmentSpendExportFilter
-   -> PDP (DepartmentSpendRules.CanExport); this line just tells the user when it is. *@
 <a class="btn" asp-controller="Reports" asp-action="Export">Export CSV</a>
-<p class="hint" style="margin-top:8px">CSV export is available @ViewData["ExportWindow"].</p>
+<p class="hint" style="margin-top:8px">Exports are only available during business hours —
+   this is enforced by the PDP in Stage 4, and imperatively in Stage 1.</p>

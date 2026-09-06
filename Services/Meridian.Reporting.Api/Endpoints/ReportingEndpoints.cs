@@ -36,7 +36,7 @@ public static class ReportingEndpoints
             .AddEndpointFilter<DepartmentSpendExportFilter>()
             .WithSummary("Export department spend as CSV")
             .WithDescription("Finance-only export of department spend summaries, restricted to " +
-                "Monday-Friday, 9am-5pm in the organization's business timezone (US Eastern by default).");
+                "Monday-Friday, 9am-5pm UTC.");
     }
 
     private static string BuildCsv(IReadOnlyList<DepartmentSpendSummaryDto> summaries)

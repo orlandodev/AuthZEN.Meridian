@@ -8,10 +8,7 @@ using Meridian.Pdp.Service.Reporting;
 
 namespace Meridian.Pdp.Service.Pdp;
 
-public sealed class PolicyRulesEngine(
-    PolicyDbContext db,
-    TimeProvider? timeProvider = null,
-    TimeZoneInfo? businessTimeZone = null) : IPolicyEngine
+public sealed class PolicyRulesEngine(PolicyDbContext db, TimeProvider? timeProvider = null) : IPolicyEngine
 {
     // Same ActivitySource/Meter name AuthZenPolicyDecisionClient uses
     // client-side — ServiceDefaults already subscribes every service to it,
@@ -23,14 +20,9 @@ public sealed class PolicyRulesEngine(
 
     // One workspace per PolicyRulesEngine instance (itself Scoped), so its
     // profile cache lives for the whole HTTP call, including every entry of
-    // a boxcarred request. The null defaults only apply to tests constructing
-    // this directly without a service provider; a null businessTimeZone is fine
-    // unless the test exercises an export rule (DepartmentSpendRules.CanExport
-    // throws in that case).
-    private readonly RuleWorkspace _workspace = new(
-        db,
-        timeProvider ?? TimeProvider.System,
-        businessTimeZone);
+    // a boxcarred request. The null default only applies to tests
+    // constructing this directly without a service provider.
+    private readonly RuleWorkspace _workspace = new(db, timeProvider ?? TimeProvider.System);
 
     private static readonly Dictionary<
         (string ResourceType, string Action),

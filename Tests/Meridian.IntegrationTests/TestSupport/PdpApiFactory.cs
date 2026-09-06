@@ -38,10 +38,6 @@ public sealed class PdpApiFactory(
         // to, since the DbContextOptions get replaced with InMemory immediately after.
         builder.UseSetting("ConnectionStrings:policydb", "Host=localhost;Database=policydb-test;Username=postgres;Password=postgres");
 
-        // Required by Program.cs (no fallback). The RulesEngineTests / fixture
-        // instants that exercise the export window are calibrated for this zone.
-        builder.UseSetting("BusinessHours:TimeZone", "America/New_York");
-
         builder.ConfigureTestServices(services =>
         {
             // Distinct name from ExpensesApiFactory's ExpensesDbContext: EF
