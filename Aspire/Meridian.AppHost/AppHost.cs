@@ -13,6 +13,13 @@ var postgresPassword = builder.AddParameter("postgres-password", secret: true);
 // credentials. Set once in user secrets, same as postgres-password.
 var pepClientSecret = builder.AddParameter("pep-client-secret", secret: true);
 
+// The organization's business timezone (IANA id), from appsettings.json so it
+// can change without a rebuild. DepartmentSpendRules.CanExport checks its
+// Monday-Friday 9am-5pm export window in this zone rather than UTC, so it
+// tracks DST. Injected to the PDP (which enforces it) and the Portal (which
+// displays it) from this one value so the two can't drift.
+var businessTimeZone = builder.Configuration["BusinessHours:TimeZone"] ?? "America/New_York";
+
 var postgres = builder.AddPostgres("postgres", password: postgresPassword)
                       .WithDataVolume()
                       .WithPgAdmin();
@@ -41,6 +48,7 @@ var pdp = builder.AddProject<Projects.Meridian_Pdp_Service>("pdp")
                  .WithUrlForEndpoint("https", url => url.DisplayText = "Policy Decision Point")
                  .WithReference(policyDb)
                  .WithReference(identity)
+                 .WithEnvironment("BusinessHours__TimeZone", businessTimeZone)
                  .WaitFor(policyDb);
 
 // --- Enforcement points ---
@@ -93,6 +101,7 @@ builder.AddProject<Projects.Meridian_ExpensePortal>("portal")
         .WithReference(expensesApi)
         .WithReference(receiptsApi)
         .WithReference(reportingApi)
+        .WithEnvironment("BusinessHours__TimeZone", businessTimeZone)
         .WithExternalHttpEndpoints();
 
 builder.Build().Run();

@@ -12,7 +12,22 @@ builder.AddMeridianOpenApiClientCredentials(
 
 // EF Core against the Aspire-provisioned Postgres database "policydb".
 builder.AddNpgsqlDbContext<PolicyDbContext>("policydb");
-builder.Services.AddScoped<IPolicyEngine, PolicyRulesEngine>();
+
+// The organization's business timezone: DepartmentSpendRules.CanExport checks
+// its 9am-5pm window in this zone (not UTC), so it tracks DST. Required — a
+// missing key or unknown id throws at startup rather than silently defaulting.
+var timeZoneId = builder.Configuration["BusinessHours:TimeZone"];
+if (string.IsNullOrWhiteSpace(timeZoneId))
+{
+    throw new InvalidOperationException("Missing configuration: BusinessHours:TimeZone");
+}
+
+var businessTimeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+
+builder.Services.AddScoped<IPolicyEngine>(sp => new PolicyRulesEngine(
+    sp.GetRequiredService<PolicyDbContext>(),
+    sp.GetService<TimeProvider>(),
+    businessTimeZone));
 
 // Callers here are PEPs (the Expenses/Receipts/Reporting APIs), not end
 // users — they authenticate as themselves via client credentials (see the

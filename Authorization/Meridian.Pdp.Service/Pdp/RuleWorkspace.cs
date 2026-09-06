@@ -8,11 +8,16 @@ namespace Meridian.Pdp.Service.Pdp;
 // request doesn't re-query the same subject repeatedly. Domain-agnostic:
 // policy decisions (e.g. what counts as "business hours") live in the
 // *Rules classes, not here.
-public sealed class RuleWorkspace(PolicyDbContext db, TimeProvider timeProvider)
+public sealed class RuleWorkspace(PolicyDbContext db, TimeProvider timeProvider, TimeZoneInfo? businessTimeZone)
 {
     private readonly Dictionary<string, RoleAssignment?> _profileCache = new();
 
     public TimeProvider TimeProvider { get; } = timeProvider;
+
+    // Null only when a PolicyRulesEngine is constructed directly without one
+    // (tests). Program.cs always resolves it from BusinessHours:TimeZone, and
+    // DepartmentSpendRules.CanExport throws rather than proceed without it.
+    public TimeZoneInfo? BusinessTimeZone { get; } = businessTimeZone;
 
     public async Task<RoleAssignment?> GetProfileAsync(string userId, CancellationToken ct)
     {
