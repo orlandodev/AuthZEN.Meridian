@@ -12,9 +12,10 @@ namespace Meridian.IntegrationTests;
 // AuthZenPolicyDecisionClient -> HTTP -> Pdp.Service -> PolicyRulesEngine ->
 // decision back. Unit tests already cover each half in isolation with mocks;
 // this is the seam those can't verify — in particular the payoff of the
-// story: the Monday-Friday 9am-5pm UTC export window, once a C# `if` inside
-// the endpoint, is now the PDP's DepartmentSpendRules.CanExport, decided
-// against the PDP's own clock (pinned by ReportingPdpFixture).
+// story: the Monday-Friday 9am-5pm export window, once a C# `if` inside the
+// endpoint, is now the PDP's DepartmentSpendRules.CanExport, decided against
+// the PDP's own clock in the configured business zone (pinned by
+// ReportingPdpFixture).
 //
 // Subjects come from the PDP's own seed data (see RulesEngineTests):
 // u-finn is Finance, u-nadia manages Sales, u-emma is a Sales employee.
