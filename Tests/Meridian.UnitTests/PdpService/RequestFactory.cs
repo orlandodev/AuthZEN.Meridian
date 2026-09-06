@@ -59,6 +59,24 @@ public static class RequestFactory
             }
         };
 
+    // No resource Id: mirrors UploadEligibilityHandler, which authorizes an
+    // upload against the parent expense's owner/status before any Receipt exists.
+    public static AccessEvaluationRequest ReceiptCreateRequest(string subjectId, string ownerId, string status) =>
+        new()
+        {
+            Subject = new Subject { Type = "user", Id = subjectId },
+            Action = new AuthZenAction { Name = "create" },
+            Resource = new Resource
+            {
+                Type = "receipt",
+                Properties = new Dictionary<string, object>
+                {
+                    ["ownerId"] = ownerId,
+                    ["status"] = status
+                }
+            }
+        };
+
     public static AccessEvaluationRequest DepartmentSpendRequest(string subjectId, string action, string department) =>
         new()
         {

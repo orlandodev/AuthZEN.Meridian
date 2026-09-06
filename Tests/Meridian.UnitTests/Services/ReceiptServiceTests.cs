@@ -8,8 +8,8 @@ public class ReceiptServiceTests
 {
     private const string OwnerUserId = "u-emma";
 
-    private static CallerContext BuildCaller(bool isFinance = false) =>
-        new(OwnerUserId, "Sales", isFinance, false);
+    private static CallerContext BuildCaller(bool isFinance = false, bool isManager = false) =>
+        new(OwnerUserId, "Sales", isFinance, isManager);
 
     private static Receipt BuildReceipt(
         Guid expenseId, string ownerUserId = OwnerUserId, string blobUri = "https://blobs.test/receipts/x/receipt.jpg") => new()
@@ -36,7 +36,7 @@ public class ReceiptServiceTests
     }
 
     [Fact]
-    public async Task GetForExpenseAsync_ReturnsOnlyOwnedReceipts_ForNonFinanceCaller()
+    public async Task GetForExpenseAsync_ReturnsOnlyOwnedReceipts_ForNonFinanceNonManagerCaller()
     {
         var expenseId = Guid.NewGuid();
         var repository = new Mock<IReceiptRepository>();
@@ -47,6 +47,24 @@ public class ReceiptServiceTests
         var result = await sut.GetForExpenseAsync(expenseId, BuildCaller(), CancellationToken.None);
 
         result.Should().ContainSingle().Which.OwnerUserId.Should().Be(OwnerUserId);
+    }
+
+    [Fact]
+    public async Task GetForExpenseAsync_ReturnsEveryReceipt_ForManagerCaller()
+    {
+        // Deliberately over-inclusive, same as the Finance branch — Receipts.Api's
+        // ReceiptVisibilityFilter is what narrows this down to a genuine ManagerOf
+        // relationship via the PDP; this method's own job is just to not hide
+        // candidates the filter still needs to see.
+        var expenseId = Guid.NewGuid();
+        var repository = new Mock<IReceiptRepository>();
+        repository.Setup(r => r.GetByExpenseIdAsync(expenseId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([BuildReceipt(expenseId, "u-emma"), BuildReceipt(expenseId, "u-mateo")]);
+        var sut = new ReceiptService(repository.Object, Mock.Of<IReceiptBlobStorage>());
+
+        var result = await sut.GetForExpenseAsync(expenseId, BuildCaller(isManager: true), CancellationToken.None);
+
+        result.Should().HaveCount(2);
     }
 
     [Fact]

@@ -36,6 +36,7 @@
                     <td class="amount">@expense.Amount.ToString("C")</td>
                     <td><span class="status-pill status-@expense.Status.ToString().ToLowerInvariant()">@expense.Status</span></td>
                     <td>
+                        <div class="row-actions">
                         @if (expense.OwnerUserId == currentUserId && expense.Status == ExpenseStatus.Draft)
                         {
                             <form method="post" asp-controller="Expenses" asp-action="Submit">
@@ -56,6 +57,7 @@
                                 <button type="submit" class="secondary">Reject</button>
                             </form>
                         }
+                        </div>
                     </td>
                     <td>
                         <a asp-controller="Receipts" asp-action="ForExpense" asp-route-expenseId="@expense.Id">Receipts</a>

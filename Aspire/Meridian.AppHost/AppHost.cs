@@ -1,7 +1,4 @@
 // Meridian distributed application model.
-// Stage 3: Expenses.Api now depends on the PDP and enforces via PEP. Receipts
-// and Reporting still enforce in-process; add .WithReference(pdp) to each as
-// they convert in later stages.
 
 var builder = DistributedApplication.CreateBuilder(args);
 
@@ -47,9 +44,9 @@ var pdp = builder.AddProject<Projects.Meridian_Pdp_Service>("pdp")
                  .WaitFor(policyDb);
 
 // --- Enforcement points ---
-// Expenses.Api is a PEP as of Stage 3: it delegates authorization decisions
-// to the PDP instead of enforcing in-process. Receipts and Reporting still
-// enforce in-process until Stage 4.
+// Expenses.Api (Stage 3) and Receipts.Api (Stage 4, Story 4.1) are both PEPs:
+// they delegate authorization decisions to the PDP instead of enforcing
+// in-process. Reporting still enforces in-process until Story 4.2.
 //
 // Story 4.0 adds two owner-scoped, bearer-forwarded inter-service calls:
 // Expenses.Api -> Receipts.Api (blocking Submit on zero receipts) and
@@ -63,8 +60,11 @@ var receiptsApi = builder.AddProject<Projects.Meridian_Receipts_Api>("receipts-a
                 .WithReference(receiptsDb)
                 .WithReference(identity)
                 .WithReference(receiptBlobs)
+                .WithReference(pdp)
+                .WithEnvironment("Pep__ClientSecret", pepClientSecret)
                 .WaitFor(receiptsDb)
-                .WaitFor(receiptBlobs);
+                .WaitFor(receiptBlobs)
+                .WaitFor(pdp);
 
 var expensesApi = builder.AddProject<Projects.Meridian_Expenses_Api>("expenses-api")
                 .WithUrlForEndpoint("https", url => url.DisplayText = "Expenses API - Scalar")

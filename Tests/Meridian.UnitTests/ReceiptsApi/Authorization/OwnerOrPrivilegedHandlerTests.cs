@@ -1,3 +1,5 @@
+using AuthZen.Contracts;
+using AuthZen.Pep;
 using Meridian.Receipts.Api.Authorization;
 using Meridian.Services;
 using Meridian.Services.DTOs;
@@ -7,76 +9,72 @@ using static Meridian.UnitTests.ReceiptsApi.TestSupport.AuthorizationTestData;
 
 namespace Meridian.UnitTests.ReceiptsApi.Authorization;
 
+// Stage 4 (Story 4.1): the role/ownership matrix this class used to cover
+// now lives in the PDP itself (see RulesEngineTests' Receipt_Read_* cases,
+// including the manager-of branch this handler never had in-process). This
+// handler's own job is narrower: build the right SARC request and honor
+// whatever the PDP decides.
 public class OwnerOrPrivilegedHandlerTests
 {
-    private readonly OwnerOrPrivilegedHandler _sut = new();
-
-    private async Task<bool> SucceedsAsync(ClaimsPrincipal user, ReceiptDto resource)
+    private static async Task<AuthorizationHandlerContext> RunAsync(
+        ClaimsPrincipal user, ReceiptDto resource, IPolicyDecisionClient pdp)
     {
+        var sut = new OwnerOrPrivilegedHandler(pdp);
         var context = new AuthorizationHandlerContext([new OwnerOrPrivilegedRequirement()], user, resource);
-        await _sut.HandleAsync(context);
-        return context.HasSucceeded;
+        await sut.HandleAsync(context);
+        return context;
     }
 
     [Fact]
-    public async Task Owner_Succeeds_EvenWithoutAPrivilegedRole()
+    public async Task Succeeds_WhenPdpPermits()
     {
-        var user = BuildUser(userId: OwnerUserId, role: Roles.Employee);
-        var receipt = BuildReceipt(ownerUserId: OwnerUserId);
+        var pdp = new Mock<IPolicyDecisionClient>();
+        pdp.Setup(p => p.IsAllowedAsync(It.IsAny<AccessEvaluationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
 
-        (await SucceedsAsync(user, receipt)).Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task Finance_Succeeds_RegardlessOfOwnership()
-    {
-        var user = BuildUser(userId: OtherUserId, role: Roles.Finance);
-        var receipt = BuildReceipt(ownerUserId: OwnerUserId);
-
-        (await SucceedsAsync(user, receipt)).Should().BeTrue();
-    }
-
-    // Completes the {employee, manager, finance} x {own, others'} matrix: a manager
-    // viewing their own receipt succeeds via the isOwner branch, same as any employee.
-    [Fact]
-    public async Task Manager_Succeeds_WhenViewingTheirOwnReceipt()
-    {
-        var user = BuildUser(userId: OwnerUserId, role: Roles.Manager, department: Department);
-        var receipt = BuildReceipt(ownerUserId: OwnerUserId);
-
-        (await SucceedsAsync(user, receipt)).Should().BeTrue();
-    }
-
-    // Completes the matrix: finance viewing their own receipt succeeds — either
-    // branch (isOwner or isFinance) alone is sufficient.
-    [Fact]
-    public async Task Finance_Succeeds_WhenViewingTheirOwnReceipt()
-    {
-        var user = BuildUser(userId: OwnerUserId, role: Roles.Finance);
-        var receipt = BuildReceipt(ownerUserId: OwnerUserId);
-
-        (await SucceedsAsync(user, receipt)).Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task NonOwnerEmployee_Fails()
-    {
-        var user = BuildUser(userId: OtherUserId, role: Roles.Employee, department: Department);
-        var receipt = BuildReceipt(ownerUserId: OwnerUserId);
-
-        (await SucceedsAsync(user, receipt)).Should().BeFalse();
-    }
-
-    // Pins the Stage 1 drift bug: a manager whose claims would satisfy Expenses.Api's
-    // OwnerOrPrivilegedHandler (same department as the resource) still fails here,
-    // because ReceiptDto has no Department to check against. This is the executable
-    // proof that the drift is real and intentional, not a typo.
-    [Fact]
-    public async Task Manager_Fails_EvenThoughTheEquivalentExpensesApiCheckWouldSucceed()
-    {
         var user = BuildUser(userId: OtherUserId, role: Roles.Manager, department: Department);
         var receipt = BuildReceipt(ownerUserId: OwnerUserId);
 
-        (await SucceedsAsync(user, receipt)).Should().BeFalse();
+        var context = await RunAsync(user, receipt, pdp.Object);
+
+        context.HasSucceeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Fails_WhenPdpDenies()
+    {
+        var pdp = new Mock<IPolicyDecisionClient>();
+        pdp.Setup(p => p.IsAllowedAsync(It.IsAny<AccessEvaluationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var user = BuildUser(userId: OtherUserId, role: Roles.Employee, department: Department);
+        var receipt = BuildReceipt(ownerUserId: OwnerUserId);
+
+        var context = await RunAsync(user, receipt, pdp.Object);
+
+        context.HasSucceeded.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task BuildsSarcRequest_FromCallerAndResource()
+    {
+        AccessEvaluationRequest? captured = null;
+        var pdp = new Mock<IPolicyDecisionClient>();
+        pdp.Setup(p => p.IsAllowedAsync(It.IsAny<AccessEvaluationRequest>(), It.IsAny<CancellationToken>()))
+            .Callback<AccessEvaluationRequest, CancellationToken>((request, _) => captured = request)
+            .ReturnsAsync(true);
+
+        var user = BuildUser(userId: OtherUserId, role: Roles.Manager, department: Department);
+        var receipt = BuildReceipt(ownerUserId: OwnerUserId);
+
+        await RunAsync(user, receipt, pdp.Object);
+
+        captured.Should().NotBeNull();
+        captured!.Subject.Id.Should().Be(OtherUserId);
+        captured.Action.Name.Should().Be("read");
+        captured.Resource.Type.Should().Be("receipt");
+        captured.Resource.Id.Should().Be(receipt.Id.ToString());
+        captured.Resource.Properties.Should().NotBeNull();
+        captured.Resource.Properties!["ownerId"].Should().Be(OwnerUserId);
     }
 }

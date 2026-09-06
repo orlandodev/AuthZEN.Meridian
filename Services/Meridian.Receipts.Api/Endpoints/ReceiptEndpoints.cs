@@ -32,14 +32,16 @@ public static class ReceiptEndpoints
     {
         var group = app.MapGroup("/receipts").RequireAuthorization().WithTags("Receipts");
 
-        // List: finance sees every receipt for the expense, everyone else sees only
-        // their own — no department filtering, matching how GET /expenses itself has
-        // no department logic (that only shows up in the resource-based checks below).
+        // List: finance sees every receipt for the expense, managers see every receipt
+        // too but narrowed to genuine ManagerOf reports via the PDP (see
+        // ReceiptVisibilityFilter, so this can't disagree with the download endpoint's
+        // OwnerOrPrivilegedHandler), everyone else sees only their own.
         group.MapGet("/", async (Guid expenseId, ClaimsPrincipal user,
-            IReceiptService receipts, CancellationToken ct) =>
-            Results.Ok(await receipts.GetForExpenseAsync(expenseId, user.ToCallerContext(), ct)))
+            ReceiptVisibilityFilter visibility, CancellationToken ct) =>
+            Results.Ok(await visibility.GetVisibleReceiptsAsync(expenseId, user, ct)))
             .WithSummary("List receipts for an expense")
-            .WithDescription("Finance sees every receipt attached to the expense; everyone else sees only " +
+            .WithDescription("Finance sees every receipt attached to the expense. Managers see every receipt " +
+                "too, narrowed to the employees they directly manage via the PDP. Everyone else sees only " +
                 "the receipts they uploaded themselves.");
 
         // Download: resource-based ownership check. The Stage 1 drift bug lives in
