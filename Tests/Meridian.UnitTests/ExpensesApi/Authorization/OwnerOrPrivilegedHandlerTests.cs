@@ -10,10 +10,9 @@ using static Meridian.UnitTests.ExpensesApi.TestSupport.AuthorizationTestData;
 
 namespace Meridian.UnitTests.ExpensesApi.Authorization;
 
-// Stage 3: the department/draft/manager-vs-owner scenarios this class used to
-// cover now live in the PDP itself (see RulesEngineTests' Expense_Read_*
-// cases). This handler's own job is narrower: build the right SARC request
-// and honor whatever the PDP decides.
+// The department/draft/manager-vs-owner scenarios live in the PDP itself (see
+// RulesEngineTests' Expense_Read_* cases). This handler's own job is narrower:
+// build the right SARC request and honor whatever the PDP decides.
 public class OwnerOrPrivilegedHandlerTests
 {
     private static async Task<AuthorizationHandlerContext> RunAsync(

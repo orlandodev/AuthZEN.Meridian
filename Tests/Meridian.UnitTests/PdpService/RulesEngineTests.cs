@@ -335,8 +335,8 @@ public class RulesEngineTests
     [Fact]
     public async Task Receipt_Read_ManagerOfOwner_Allowed()
     {
-        // Proves the PDP intentionally normalizes past Receipts.Api's
-        // documented Stage-1 drift (no manager branch there today).
+        // Proves the PDP intentionally normalizes past Receipts.Api's own
+        // check, which has no manager-of branch there today.
         using var db = PolicyDbContextTestFactory.Create();
         var engine = new PolicyRulesEngine(db);
 
@@ -413,7 +413,7 @@ public class RulesEngineTests
     public async Task Receipt_Create_Finance_Denied()
     {
         // Unlike Receipt_Read, Finance gets no carve-out — only the literal
-        // owner may ever upload, per Story 4.0's fix.
+        // owner may ever upload.
         using var db = PolicyDbContextTestFactory.Create();
         var engine = new PolicyRulesEngine(db);
 

@@ -23,8 +23,7 @@ public static class ReportingEndpoints
             .WithSummary("Get department spend summaries")
             .WithDescription("Finance sees every department's spend summary; a manager sees only their own department's.");
 
-        // Finance-only export, additionally gated by a business-hours check — the
-        // traditional-code version of what becomes a PDP context check in Stage 4.
+        // Finance-only export, additionally gated by a business-hours check.
         group.MapGet("/department-spend/export", async (ClaimsPrincipal user, IReportingService reporting,
             TimeProvider timeProvider, CancellationToken ct) =>
         {

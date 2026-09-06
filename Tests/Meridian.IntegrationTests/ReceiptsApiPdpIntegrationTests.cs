@@ -7,15 +7,15 @@ using Meridian.Services.DTOs;
 
 namespace Meridian.IntegrationTests;
 
-// End-to-end proof that Receipts.Api's Stage 4 (Story 4.1) conversion works
-// over the wire, for both PDP-backed decisions this story converts: the real
+// End-to-end proof that Receipts.Api's PEP conversion works over the wire, for
+// both PDP-backed decisions it converts: the real
 // OwnerOrPrivilegedHandler/UploadEligibilityHandler -> AuthZenPolicyDecisionClient
 // -> HTTP -> Pdp.Service -> PolicyRulesEngine -> decision back. Unit tests
 // already cover each half in isolation with mocks; this is the seam those
-// can't verify — including the exact regression the plan calls out: a
-// manager who used to get 403 downloading a report's receipt (Receipts.Api's
-// own OwnerOrPrivilegedHandler never had a manager-of branch — Stage 1
-// drift) now succeeds, because ReceiptRules.CanRead does have one.
+// can't verify — including the regression it fixes: a manager who used to get
+// 403 downloading a report's receipt (Receipts.Api's own
+// OwnerOrPrivilegedHandler never had a manager-of branch) now succeeds,
+// because ReceiptRules.CanRead does have one.
 //
 // Ids b0000000-...-0001/2 come from ReceiptsDbContext's HasData (owned by
 // u-emma and u-mateo respectively); u-nadia manages both per the PDP's own
@@ -54,8 +54,8 @@ public class ReceiptsApiPdpIntegrationTests(ReceiptsPdpFixture fixture) : IClass
     public async Task Download_ManagerOfOwner_Returns200()
     {
         // The regression this story exists to fix: Receipts.Api's own
-        // in-process check had no manager-of branch (Stage 1 drift); the
-        // PDP's ReceiptRules.CanRead does, so this now succeeds instead of
+        // in-process check had no manager-of branch; the PDP's
+        // ReceiptRules.CanRead does, so this now succeeds instead of
         // 403 — over real HTTP, not a mock.
         var client = CreateClient("u-nadia", Roles.Manager, "Sales");
 
@@ -181,7 +181,7 @@ public class ReceiptsApiPdpIntegrationTests(ReceiptsPdpFixture fixture) : IClass
     public async Task Upload_NonOwnerOnDraftExpense_Returns403()
     {
         // Unlike Download, Upload gets no Finance/manager carve-out — only
-        // the literal owner may ever upload, per Story 4.0/ReceiptRules.CanCreate.
+        // the literal owner may ever upload, per ReceiptRules.CanCreate.
         var client = CreateClient("u-mateo", Roles.Employee, "Sales");
 
         var response = await client.PostAsync("/receipts", BuildUploadContent(StubExpensesLookupHandler.DraftExpenseId));

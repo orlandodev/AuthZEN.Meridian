@@ -44,8 +44,7 @@ public static class ReceiptEndpoints
                 "too, narrowed to the employees they directly manage via the PDP. Everyone else sees only " +
                 "the receipts they uploaded themselves.");
 
-        // Download: resource-based ownership check. The Stage 1 drift bug lives in
-        // OwnerOrPrivilegedHandler, not here.
+        // Download: resource-based ownership check.
         group.MapGet("/{id:guid}", async (Guid id, ClaimsPrincipal user,
             IReceiptService receipts, IAuthorizationService authz, CancellationToken ct) =>
         {
@@ -91,11 +90,11 @@ public static class ReceiptEndpoints
                     title: "Only PNG, JPEG, or PDF files are accepted.");
             }
 
-            // Story 4.0: owner-only upload while the expense is still Draft. Manager
-            // and Finance can never upload, at any status — they're view-only on
-            // receipts, full stop. Receipts.Api has no view of the expense itself, so
-            // it asks Expenses.Api (see ExpensesLookupClient) rather than trusting
-            // anything caller-supplied. The decision itself goes through the same
+            // Owner-only upload while the expense is still Draft. Manager and Finance
+            // can never upload, at any status — they're view-only on receipts, full
+            // stop. Receipts.Api has no view of the expense itself, so it asks
+            // Expenses.Api (see ExpensesLookupClient) rather than trusting anything
+            // caller-supplied. The decision itself goes through the same
             // resource-based IAuthorizationService pattern Download uses above (see
             // UploadEligibilityHandler), rather than an inline comparison here.
             var expense = await expensesLookup.GetExpenseAsync(expenseId, ct);

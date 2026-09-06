@@ -9,6 +9,6 @@ public class Receipt
     public string ContentType { get; set; } = default!;
     public DateTimeOffset UploadedAt { get; set; } = DateTimeOffset.UtcNow;
 
-    // Deliberately no Department field — see Receipts.Api/Authorization/OwnerOrPrivilegedHandler.cs
-    // for why that's the Stage 1 drift bug, not an oversight.
+    // Deliberately no Department field, not an oversight — see
+    // Receipts.Api/Authorization/OwnerOrPrivilegedHandler.cs.
 }

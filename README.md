@@ -53,6 +53,9 @@ traces, and metrics. The test users (password `Pass123$`) are:
 
 ## The stage roadmap (course spine)
 
+> For the stage-by-stage annotations related to specific changes in the source, see [changelog.md](changelog.md).
+
+
 - **Stage 0 — Traditional (this scaffold).** `Meridian.Expenses.Api` enforces authorization
   in-process: role policies, a resource-based ownership handler (`OwnerOrPrivilegedHandler`),
   and an imperative amount-limit rule (`ApprovalRules`). No PDP involved.

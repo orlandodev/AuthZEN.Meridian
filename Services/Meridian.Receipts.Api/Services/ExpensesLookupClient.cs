@@ -4,8 +4,8 @@ using Meridian.Services.DTOs;
 
 namespace Meridian.Receipts.Api.Services;
 
-// Story 4.0: Receipts.Api's first outbound call to another Meridian API — it has no
-// view of an expense's owner or status otherwise. Authenticates as the caller via
+// Receipts.Api's first outbound call to another Meridian API — it has no view
+// of an expense's owner or status otherwise. Authenticates as the caller via
 // BearerForwardingHandler, so this only ever sees what the caller themselves is
 // allowed to see: safe here because upload eligibility is being checked for the
 // caller's own claimed expense, never on anyone else's behalf.

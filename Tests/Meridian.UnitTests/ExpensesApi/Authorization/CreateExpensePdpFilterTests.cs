@@ -8,7 +8,7 @@ using static Meridian.UnitTests.ExpensesApi.TestSupport.AuthorizationTestData;
 
 namespace Meridian.UnitTests.ExpensesApi.Authorization;
 
-// Story 3.3's endpoint-filter counterpart to the OwnerOrPrivilegedHandler/
+// The endpoint-filter counterpart to the OwnerOrPrivilegedHandler/
 // ApprovalHandler tests: proves the filter builds its SARC request from the
 // caller's own claims (there's no persisted entity for Create to build from)
 // and correctly gates on whatever the PDP decides.

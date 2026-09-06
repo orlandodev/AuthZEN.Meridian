@@ -9,11 +9,10 @@ using static Meridian.UnitTests.ReceiptsApi.TestSupport.AuthorizationTestData;
 
 namespace Meridian.UnitTests.ReceiptsApi.Authorization;
 
-// Stage 4 (Story 4.1): the role/ownership matrix this class used to cover
-// now lives in the PDP itself (see RulesEngineTests' Receipt_Read_* cases,
-// including the manager-of branch this handler never had in-process). This
-// handler's own job is narrower: build the right SARC request and honor
-// whatever the PDP decides.
+// The role/ownership matrix lives in the PDP itself (see RulesEngineTests'
+// Receipt_Read_* cases, including the manager-of branch this handler never had
+// in-process). This handler's own job is narrower: build the right SARC
+// request and honor whatever the PDP decides.
 public class OwnerOrPrivilegedHandlerTests
 {
     private static async Task<AuthorizationHandlerContext> RunAsync(

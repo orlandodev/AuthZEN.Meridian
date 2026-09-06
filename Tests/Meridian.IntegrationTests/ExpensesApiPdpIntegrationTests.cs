@@ -7,7 +7,7 @@ using Meridian.Services.DTOs;
 
 namespace Meridian.IntegrationTests;
 
-// End-to-end proof that Expenses.Api's Stage 3 conversion works over the
+// End-to-end proof that Expenses.Api's PEP conversion works over the
 // wire: real handlers/filter -> AuthZenPolicyDecisionClient -> HTTP ->
 // Pdp.Service -> PolicyRulesEngine -> decision back. Unit tests already cover
 // each half in isolation with mocks; this is the seam those can't verify.

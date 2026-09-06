@@ -28,10 +28,10 @@ builder.Services.AddValidation();
 // --- Authentication: validate JWTs issued by the Duende IdentityServer ---
 builder.AddMeridianApiAuthentication(audience: "meridian.receipts.api");
 
-// --- PEP: Stage 4 (Story 4.1) — this API delegates authorization decisions
-// to the PDP instead of enforcing in-process, same as Expenses.Api since
-// Stage 3. Authenticates to the PDP as itself via client credentials — see
-// the shared "meridian.pep" client in IdentityServer's Config.cs.
+// --- PEP: this API delegates authorization decisions to the PDP instead of
+// enforcing in-process, same as Expenses.Api. Authenticates to the PDP as
+// itself via client credentials — see the shared "meridian.pep" client in
+// IdentityServer's Config.cs.
 builder.Services.AddAuthZenPep(
     pdpBaseAddress: "https+http://pdp",
     identityServerTokenEndpoint: "https+http://identityserver/connect/token",
@@ -45,8 +45,8 @@ builder.Services.AddScoped<IAuthorizationHandler, OwnerOrPrivilegedHandler>();
 builder.Services.AddScoped<IAuthorizationHandler, UploadEligibilityHandler>();
 builder.Services.AddScoped<ReceiptVisibilityFilter>();
 
-// Story 4.0: looks up the parent expense's owner/status to authorize upload —
-// see ExpensesLookupClient and BearerForwardingHandler.
+// Looks up the parent expense's owner/status to authorize upload — see
+// ExpensesLookupClient and BearerForwardingHandler.
 builder.Services.AddHttpClient<ExpensesLookupClient>(c => c.BaseAddress = new("https+http://expenses-api"))
     .AddHttpMessageHandler<BearerForwardingHandler>();
 

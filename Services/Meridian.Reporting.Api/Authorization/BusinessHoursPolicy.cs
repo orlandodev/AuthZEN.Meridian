@@ -1,10 +1,9 @@
 namespace Meridian.Reporting.Api.Authorization;
 
 // Traditional in-process business rule gating the export endpoint: exports are
-// only allowed Monday-Friday, 9am-5pm UTC. In Stage 4 this becomes a PDP context
-// check (time-of-day/request context evaluated centrally) instead of ad hoc code
-// duplicated per service. TimeProvider is injected rather than calling
-// DateTime.Now/UtcNow directly so this is testable without wall-clock dependence.
+// only allowed Monday-Friday, 9am-5pm UTC. TimeProvider is injected rather than
+// calling DateTime.Now/UtcNow directly so this is testable without wall-clock
+// dependence.
 public static class BusinessHoursPolicy
 {
     private static readonly TimeOnly OpensAt = new(9, 0);
