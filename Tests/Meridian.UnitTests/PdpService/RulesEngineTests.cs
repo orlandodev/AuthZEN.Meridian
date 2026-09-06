@@ -7,9 +7,15 @@ namespace Meridian.UnitTests.PdpService;
 
 public class RulesEngineTests
 {
-    // 2026-07-23 is a Thursday, within business hours (9am-5pm UTC Mon-Fri).
+    // Program.cs resolves this from BusinessHours:TimeZone; PolicyRulesEngine
+    // has no fallback, so the export cases pass it explicitly.
+    private static readonly TimeZoneInfo BusinessZone =
+        TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
+
+    // 2026-07-23 15:00 UTC is a Thursday, 11:00 in America/New_York (EDT) —
+    // inside the Mon-Fri 9am-5pm business-zone window.
     private static readonly TimeProvider WithinBusinessHours =
-        new FakeTimeProvider(new DateTimeOffset(2026, 7, 23, 12, 0, 0, TimeSpan.Zero));
+        new FakeTimeProvider(new DateTimeOffset(2026, 7, 23, 15, 0, 0, TimeSpan.Zero));
 
     // 2026-07-25 is a Saturday.
     private static readonly TimeProvider OutsideBusinessHours =
@@ -473,7 +479,7 @@ public class RulesEngineTests
     public async Task DepartmentSpend_Export_Finance_WithinBusinessHours_Allowed()
     {
         using var db = PolicyDbContextTestFactory.Create();
-        var engine = new PolicyRulesEngine(db, WithinBusinessHours);
+        var engine = new PolicyRulesEngine(db, WithinBusinessHours, BusinessZone);
 
         var request = RequestFactory.DepartmentSpendRequest("u-finn", "export", department: "Sales");
 
@@ -484,7 +490,7 @@ public class RulesEngineTests
     public async Task DepartmentSpend_Export_Finance_OutsideBusinessHours_Denied()
     {
         using var db = PolicyDbContextTestFactory.Create();
-        var engine = new PolicyRulesEngine(db, OutsideBusinessHours);
+        var engine = new PolicyRulesEngine(db, OutsideBusinessHours, BusinessZone);
 
         var request = RequestFactory.DepartmentSpendRequest("u-finn", "export", department: "Sales");
 
@@ -496,11 +502,57 @@ public class RulesEngineTests
     {
         // Even for their own department, and even within business hours — export is finance-only.
         using var db = PolicyDbContextTestFactory.Create();
-        var engine = new PolicyRulesEngine(db, WithinBusinessHours);
+        var engine = new PolicyRulesEngine(db, WithinBusinessHours, BusinessZone);
 
         var request = RequestFactory.DepartmentSpendRequest("u-nadia", "export", department: "Sales");
 
         (await engine.EvaluateAsync(request)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task DepartmentSpend_Export_Finance_InsideUtcWindowButBeforeNineInBusinessZone_Denied()
+    {
+        // 12:00 UTC would be inside a 9-5 *UTC* window, but it is only 08:00 in
+        // America/New_York (EDT) — the rule checks the business zone, not UTC.
+        using var db = PolicyDbContextTestFactory.Create();
+        var engine = new PolicyRulesEngine(
+            db, new FakeTimeProvider(new DateTimeOffset(2026, 7, 23, 12, 0, 0, TimeSpan.Zero)), BusinessZone);
+
+        var request = RequestFactory.DepartmentSpendRequest("u-finn", "export", department: "Sales");
+
+        (await engine.EvaluateAsync(request)).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData(2026, 1, 22, true)]   // 21:30 UTC is 16:30 EST — winter, still inside
+    [InlineData(2026, 7, 23, false)]  // 21:30 UTC is 17:30 EDT — summer, past close
+    public async Task DepartmentSpend_Export_Finance_WindowTracksBusinessZoneDst(
+        int year, int month, int day, bool expected)
+    {
+        // Same UTC time-of-day, opposite decisions: the close is 17:00 in the
+        // business zone, and that zone's offset shifts with DST.
+        using var db = PolicyDbContextTestFactory.Create();
+        var engine = new PolicyRulesEngine(
+            db, new FakeTimeProvider(new DateTimeOffset(year, month, day, 21, 30, 0, TimeSpan.Zero)), BusinessZone);
+
+        var request = RequestFactory.DepartmentSpendRequest("u-finn", "export", department: "Sales");
+
+        (await engine.EvaluateAsync(request)).Should().Be(expected);
+    }
+
+    [Fact]
+    public async Task DepartmentSpend_Export_NoBusinessTimeZone_Throws()
+    {
+        // There is no fallback zone: an engine built without one (only reachable
+        // by mis-wiring — Program.cs requires BusinessHours:TimeZone) fails loudly
+        // rather than silently picking a default.
+        using var db = PolicyDbContextTestFactory.Create();
+        var engine = new PolicyRulesEngine(db, WithinBusinessHours);
+
+        var request = RequestFactory.DepartmentSpendRequest("u-finn", "export", department: "Sales");
+        var act = async () => await engine.EvaluateAsync(request);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
     }
 
     // ---- default-deny ----

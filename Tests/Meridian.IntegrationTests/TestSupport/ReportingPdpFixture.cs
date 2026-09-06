@@ -7,15 +7,16 @@ namespace Meridian.IntegrationTests.TestSupport;
 // startup pipeline (migrate-or-create) applies ReportingDbContext's HasData
 // rows exactly as it would in production.
 //
-// Two PDP hosts, at fixed instants an hour apart in wall-clock meaning: one
-// inside the Monday-Friday 9am-5pm UTC export window, one outside it (a
-// Saturday). DepartmentSpendRules.CanExport reads the PDP's own clock, so
-// pinning it is the only way to prove the business-hours half of the rule
-// over real HTTP rather than only in RulesEngineTests.
+// Two PDP hosts at fixed instants: one inside the Monday-Friday 9am-5pm export
+// window (evaluated in America/New_York, the default business zone), one
+// outside it (a Saturday). DepartmentSpendRules.CanExport reads the PDP's own
+// clock, so pinning it is the only way to prove the business-hours half of the
+// rule over real HTTP rather than only in RulesEngineTests.
 public sealed class ReportingPdpFixture : IAsyncLifetime
 {
-    private static readonly DateTimeOffset WithinBusinessHours = new(2026, 7, 23, 12, 0, 0, TimeSpan.Zero);  // Thursday
-    private static readonly DateTimeOffset OutsideBusinessHours = new(2026, 7, 25, 12, 0, 0, TimeSpan.Zero); // Saturday
+    // 15:00 UTC is 11:00 in America/New_York (EDT) — inside the window.
+    private static readonly DateTimeOffset WithinBusinessHours = new(2026, 7, 23, 15, 0, 0, TimeSpan.Zero);  // Thursday
+    private static readonly DateTimeOffset OutsideBusinessHours = new(2026, 7, 25, 15, 0, 0, TimeSpan.Zero); // Saturday
 
     public PdpApiFactory Pdp { get; } =
         new("integration-tests-reporting-policydb", new FakeTimeProvider(WithinBusinessHours));
