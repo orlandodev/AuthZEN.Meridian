@@ -15,30 +15,25 @@ public static class ReportingEndpoints
         var group = app.MapGroup("/reports").RequireAuthorization().WithTags("Reports");
 
         // Finance sees every department; a manager sees only their own department.
-        // Role membership is enforced declaratively via the policy below; the
-        // department-scoping itself happens in IReportingService.
+        // Whether the caller may see department spend at all is the PDP's call
+        // (see DepartmentSpendReadFilter); the per-department row scoping happens
+        // in IReportingService.
         group.MapGet("/department-spend", async (ClaimsPrincipal user, IReportingService reporting, CancellationToken ct) =>
             Results.Ok(await reporting.GetDepartmentSpendAsync(user.ToCallerContext(), ct)))
-            .RequireAuthorization([Policies.CanViewDepartmentSpend])
+            .AddEndpointFilter<DepartmentSpendReadFilter>()
             .WithSummary("Get department spend summaries")
             .WithDescription("Finance sees every department's spend summary; a manager sees only their own department's.");
 
-        // Finance-only export, additionally gated by a business-hours check.
+        // Finance-only export, additionally gated by a business-hours check —
+        // both now decided centrally by the PDP (see DepartmentSpendExportFilter).
         group.MapGet("/department-spend/export", async (ClaimsPrincipal user, IReportingService reporting,
-            TimeProvider timeProvider, CancellationToken ct) =>
+            CancellationToken ct) =>
         {
-            if (!BusinessHoursPolicy.IsWithinBusinessHours(timeProvider))
-            {
-                return Results.Problem(
-                    statusCode: StatusCodes.Status403Forbidden,
-                    title: "Exports are only available Monday-Friday, 9am-5pm UTC.");
-            }
-
             var summaries = await reporting.GetDepartmentSpendAsync(user.ToCallerContext(), ct);
             var csv = BuildCsv(summaries);
             return Results.File(Encoding.UTF8.GetBytes(csv), "text/csv", "department-spend.csv");
         })
-            .RequireAuthorization(Policies.CanExportDepartmentSpend)
+            .AddEndpointFilter<DepartmentSpendExportFilter>()
             .WithSummary("Export department spend as CSV")
             .WithDescription("Finance-only export of department spend summaries, restricted to " +
                 "Monday-Friday, 9am-5pm UTC.");
