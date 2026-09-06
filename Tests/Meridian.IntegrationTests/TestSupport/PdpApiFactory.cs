@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Meridian.IntegrationTests.TestSupport;
 
@@ -21,7 +22,12 @@ namespace Meridian.IntegrationTests.TestSupport;
 // explicit InMemoryDatabaseRoot is given, so two independent PdpApiFactory
 // hosts pointed at the same name would race to seed (and could observe each
 // other's data) under xUnit's default cross-collection parallelization.
-public sealed class PdpApiFactory(string databaseName = "integration-tests-policydb")
+// timeProvider, when supplied, is registered so PolicyRulesEngine evaluates
+// time-of-day rules (DepartmentSpendRules.CanExport's business-hours gate)
+// against a fixed instant instead of the wall clock — see ReportingPdpFixture.
+public sealed class PdpApiFactory(
+    string databaseName = "integration-tests-policydb",
+    TimeProvider? timeProvider = null)
     : WebApplicationFactory<PdpAssembly::Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -39,6 +45,12 @@ public sealed class PdpApiFactory(string databaseName = "integration-tests-polic
             // sharing a name across two models means whichever EnsureCreated()
             // runs second skips its own HasData seeding.
             TestDbContextReplacement.UseInMemory<PolicyDbContext>(services, databaseName);
+
+            if (timeProvider is not null)
+            {
+                services.RemoveAll<TimeProvider>();
+                services.AddSingleton(timeProvider);
+            }
 
             services.AddAuthentication(PepTestAuthHandler.SchemeName)
                 .AddScheme<AuthenticationSchemeOptions, PepTestAuthHandler>(PepTestAuthHandler.SchemeName, _ => { });

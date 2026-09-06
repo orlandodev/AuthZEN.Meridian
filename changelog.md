@@ -190,11 +190,10 @@ handlers stop enforcing and delegate to the PDP behind the same
 `Authorization/AuthZen.Pep/IPolicyDecisionClient.cs` — `IPolicyDecisionClient` · _forward-looking_
 
 ### AppHost — enforcement points overview
-> Expenses.Api (Stage 3) and Receipts.Api (Stage 4, Story 4.1) are both PEPs:
-> they delegate authorization decisions to the PDP instead of enforcing
-> in-process. Reporting still enforces in-process until Story 4.2.
+> Expenses.Api, Receipts.Api, and Reporting.Api are all PEPs: they delegate
+> authorization decisions to the PDP instead of enforcing in-process.
 
-`Aspire/Meridian.AppHost/AppHost.cs` — enforcement-points comment · _retrospective_ + _forward-looking_ (Story 4.2)
+`Aspire/Meridian.AppHost/AppHost.cs` — enforcement-points comment · _retrospective_ (Story 4.2 landed the last of the three)
 
 ---
 
@@ -370,6 +369,69 @@ to a PEP; Story 4.2 (pending) converts `Reporting.Api`.
 > proving one policy enforced across multiple services.
 
 `Services/Meridian.Reporting.Api/Program.cs` — top-of-file comment · _forward-looking_ (also listed under Stage 0)
+
+### Reporting.Api PEP registration (Story 4.2)
+> --- PEP: this API delegates authorization decisions to the PDP instead of
+> enforcing in-process, same as Expenses.Api and Receipts.Api. Authenticates
+> to the PDP as itself via client credentials — see the shared "meridian.pep"
+> client in IdentityServer's Config.cs.
+
+`Services/Meridian.Reporting.Api/Program.cs` — `AddAuthZenPep` registration · _retrospective_
+
+### Department-spend read delegated to the PDP (Story 4.2)
+> The IEndpointFilter counterpart to Expenses.Api's CreateExpensePdpFilter: the
+> department-spend list has no persisted resource to run through
+> AuthorizationHandler<TRequirement, TResource>, so this builds the SARC
+> request from the caller's own claims. Replaces the CanViewDepartmentSpend
+> role policy — the manager-or-finance check, and the manager's own-department
+> scoping, are now DepartmentSpendRules.CanRead. Per-department row filtering
+> still happens in ReportingService.
+
+`Services/Meridian.Reporting.Api/Authorization/DepartmentSpendReadFilter.cs` — `DepartmentSpendReadFilter` · _retrospective_
+
+### Business-hours export check becomes a PDP evaluation (Story 4.2)
+> Replaces both the CanExportDepartmentSpend role policy and the in-process
+> BusinessHoursPolicy branch that used to sit inside the export handler: a
+> single ("department_spend", "export") evaluation now covers finance-only
+> access and the Monday-Friday 9am-5pm UTC window together
+> (DepartmentSpendRules.CanExport). This is the story's payoff — an ABAC rule
+> that was a C# `if` in Stage 1 is now data the PDP reasons about. The time is
+> the PDP's own, never carried in the request, so a PEP cannot widen the
+> window by lying about the clock (see the PDP's own BusinessHoursPolicy
+> comment); a denial collapses to one 403 regardless of which half failed.
+
+`Services/Meridian.Reporting.Api/Authorization/DepartmentSpendExportFilter.cs` — `DepartmentSpendExportFilter` · _retrospective_ (Stage 1, Stage 4 / Story 4.2)
+
+### Reporting.Api in-process BusinessHoursPolicy and role policies removed (Story 4.2)
+> `Reporting.Api/Authorization/BusinessHoursPolicy.cs` and its `Policies`
+> constants (`CanViewDepartmentSpend`, `CanViewAllDepartmentSpend`,
+> `CanExportDepartmentSpend`) are deleted — every check they backed is now the
+> PDP's. This is what the forward-looking Stage 1 entries ("Reporting export —
+> business-hours check is a pre-PDP context check", "BusinessHoursPolicy
+> becomes a PDP context check") anticipated, minus the "carried in context"
+> detail the PDP deliberately rejects.
+
+`Services/Meridian.Reporting.Api/Authorization/BusinessHoursPolicy.cs` (deleted) · _retrospective_ (Stage 1, Story 4.2)
+
+### Reporting.Api end-to-end integration proof (Story 4.2)
+> End-to-end proof that Reporting.Api's PEP conversion works over the wire, for
+> both PDP-backed decisions it converts: the real DepartmentSpendReadFilter/
+> DepartmentSpendExportFilter -> AuthZenPolicyDecisionClient -> HTTP ->
+> Pdp.Service -> PolicyRulesEngine -> decision back. The payoff case: the
+> export business-hours window, once a C# `if` inside the endpoint, is now
+> DepartmentSpendRules.CanExport decided against the PDP's own clock, pinned by
+> the fixture to a weekday inside the window and a Saturday outside it.
+
+`Tests/Meridian.IntegrationTests/ReportingApiPdpIntegrationTests.cs` — `ReportingApiPdpIntegrationTests` (class doc) · _retrospective_
+
+### Reporting.Api filter unit tests replace BusinessHoursPolicyTests (Story 4.2)
+> `BusinessHoursPolicyTests` is deleted with the class it covered; the Mon-Fri
+> 9am-5pm UTC window now lives in the PDP's own RulesEngineTests
+> (DepartmentSpend_Export_* cases). The new DepartmentSpendReadFilterTests /
+> DepartmentSpendExportFilterTests are narrower, like the Story 4.1 handler
+> tests: build the right SARC request and honor whatever the PDP decides.
+
+`Tests/Meridian.UnitTests/ReportingApi/Authorization/` — `DepartmentSpendReadFilterTests`, `DepartmentSpendExportFilterTests` · _retrospective_
 
 ---
 

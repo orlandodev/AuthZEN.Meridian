@@ -36,6 +36,9 @@
     <ProjectReference Include="..\..\Services\Meridian.Receipts.Api\Meridian.Receipts.Api.csproj">
       <Aliases>ReceiptsAssembly</Aliases>
     </ProjectReference>
+    <ProjectReference Include="..\..\Services\Meridian.Reporting.Api\Meridian.Reporting.Api.csproj">
+      <Aliases>ReportingAssembly</Aliases>
+    </ProjectReference>
     <ProjectReference Include="..\..\Authorization\AuthZen.Contracts\AuthZen.Contracts.csproj" />
     <ProjectReference Include="..\..\Authorization\AuthZen.Pep\AuthZen.Pep.csproj" />
     <ProjectReference Include="..\..\Common\Meridian.DataAccess\Meridian.DataAccess.csproj" />

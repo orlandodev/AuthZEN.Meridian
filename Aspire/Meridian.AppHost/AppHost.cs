@@ -44,9 +44,8 @@ var pdp = builder.AddProject<Projects.Meridian_Pdp_Service>("pdp")
                  .WaitFor(policyDb);
 
 // --- Enforcement points ---
-// Expenses.Api and Receipts.Api are both PEPs: they delegate authorization
-// decisions to the PDP instead of enforcing in-process. Reporting still
-// enforces in-process.
+// Expenses.Api, Receipts.Api, and Reporting.Api are all PEPs: they delegate
+// authorization decisions to the PDP instead of enforcing in-process.
 //
 // Two owner-scoped, bearer-forwarded inter-service calls: Expenses.Api ->
 // Receipts.Api (blocking Submit on zero receipts) and Receipts.Api ->
@@ -82,7 +81,10 @@ var reportingApi = builder.AddProject<Projects.Meridian_Reporting_Api>("reportin
                 .WithUrlForEndpoint("https", url => url.DisplayText = "Reporting API - Scalar")
                 .WithReference(reportingDb)
                 .WithReference(identity)
-                .WaitFor(reportingDb);
+                .WithReference(pdp)
+                .WithEnvironment("Pep__ClientSecret", pepClientSecret)
+                .WaitFor(reportingDb)
+                .WaitFor(pdp);
 
 // --- User-facing portal ---
 builder.AddProject<Projects.Meridian_ExpensePortal>("portal")

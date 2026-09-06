@@ -6,8 +6,8 @@
     <PackageReference Include="Microsoft.OpenApi" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
     <ProjectReference Include="..\..\Aspire\Meridian.ServiceDefaults\Meridian.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\Authorization\AuthZen.Pep\AuthZen.Pep.csproj" />
     <ProjectReference Include="..\..\Common\Meridian.DataAccess\Meridian.DataAccess.csproj" />
     <ProjectReference Include="..\..\Common\Meridian.Services\Meridian.Services.csproj" />
-    <!-- Stage 4 adds a ProjectReference to AuthZen.Pep and points this service at the PDP. -->
   </ItemGroup>
 </Project>
