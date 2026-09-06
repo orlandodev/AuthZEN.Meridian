@@ -20,11 +20,11 @@ public class ReceiptsController(ReceiptsApiClient receiptsApi, ExpensesApiClient
         var expenseTask = expensesApi.GetExpenseAsync(expenseId);
         var receiptsTask = receiptsApi.GetReceiptsForExpenseAsync(expenseId);
 
-        // Story 4.0: the view needs the expense's owner/status to decide whether to
-        // show the upload form at all — Receipts.Api itself is the real enforcement
-        // (see ReceiptEndpoints.MapPost in Receipts.Api), this is UX only. A manager
-        // or Finance viewer legitimately reaches this page without owning the
-        // expense, same as ExpensesController.Details.
+        // The view needs the expense's owner/status to decide whether to show the
+        // upload form at all — Receipts.Api itself is the real enforcement (see
+        // ReceiptEndpoints.MapPost in Receipts.Api), this is UX only. A manager or
+        // Finance viewer legitimately reaches this page without owning the expense,
+        // same as ExpensesController.Details.
         ExpenseDto expense;
         try
         {

@@ -5,9 +5,6 @@ using Meridian.ServiceDefaults;
 using Meridian.Services;
 using Meridian.Services.Contracts;
 
-// Reporting API skeleton. Stage 0: authenticated but not yet a PEP. In Stage 4 this
-// service gains AuthZen.Pep and delegates every decision to the shared PDP,
-// proving one policy enforced across multiple services.
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 builder.AddMeridianOpenApi(

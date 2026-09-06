@@ -4,9 +4,9 @@ using Xunit;
 
 namespace Meridian.AuthZen.ConformanceTests;
 
-// Placeholder. In Stage 5 this becomes a real conformance suite that runs the
-// same SARC requests against the homegrown PDP and an OPA-backed PDP and
-// asserts identical decisions — proving the standard makes PDPs interchangeable.
+// Placeholder for the PDP conformance suite: identical SARC requests run
+// against interchangeable PDP implementations must yield identical decisions,
+// proving the standard makes PDPs interchangeable.
 public class ContractShapeTests
 {
     [Fact]

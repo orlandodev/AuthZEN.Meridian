@@ -10,11 +10,10 @@ using static Meridian.UnitTests.ReceiptsApi.TestSupport.AuthorizationTestData;
 
 namespace Meridian.UnitTests.ReceiptsApi.Authorization;
 
-// Stage 4 (Story 4.1): the owner+Draft matrix this class used to cover
-// now lives in the PDP itself (see RulesEngineTests' Receipt_Create_* cases).
-// This handler's own job is narrower: build the right SARC request — with no
-// resource id, since no Receipt exists yet at upload time — and honor
-// whatever the PDP decides.
+// The owner+Draft matrix lives in the PDP itself (see RulesEngineTests'
+// Receipt_Create_* cases). This handler's own job is narrower: build the right
+// SARC request — with no resource id, since no Receipt exists yet at upload
+// time — and honor whatever the PDP decides.
 public class UploadEligibilityHandlerTests
 {
     private static async Task<AuthorizationHandlerContext> RunAsync(

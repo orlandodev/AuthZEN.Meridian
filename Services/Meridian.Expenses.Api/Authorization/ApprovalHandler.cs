@@ -5,8 +5,8 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace Meridian.Expenses.Api.Authorization;
 
-// Stage 3: delegates the approve/reject decision to the PDP instead of
-// enforcing in-process. The amount limit that used to live here as
+// Delegates the approve/reject decision to the PDP instead of enforcing
+// in-process. The amount limit that used to live here as
 // ApprovalRules.ManagerLimit now lives in the PDP's policy database
 // (PolicyConstants.AmountLimitKeys.ExpenseApproveManagerLimit).
 public sealed class ApprovalHandler(IPolicyDecisionClient pdp)

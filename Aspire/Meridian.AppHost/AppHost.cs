@@ -44,14 +44,14 @@ var pdp = builder.AddProject<Projects.Meridian_Pdp_Service>("pdp")
                  .WaitFor(policyDb);
 
 // --- Enforcement points ---
-// Expenses.Api (Stage 3) and Receipts.Api (Stage 4, Story 4.1) are both PEPs:
-// they delegate authorization decisions to the PDP instead of enforcing
-// in-process. Reporting still enforces in-process until Story 4.2.
+// Expenses.Api and Receipts.Api are both PEPs: they delegate authorization
+// decisions to the PDP instead of enforcing in-process. Reporting still
+// enforces in-process.
 //
-// Story 4.0 adds two owner-scoped, bearer-forwarded inter-service calls:
-// Expenses.Api -> Receipts.Api (blocking Submit on zero receipts) and
-// Receipts.Api -> Expenses.Api (looking up the parent expense's owner/status
-// to authorize upload). Declare receiptsApi first so expensesApi can
+// Two owner-scoped, bearer-forwarded inter-service calls: Expenses.Api ->
+// Receipts.Api (blocking Submit on zero receipts) and Receipts.Api ->
+// Expenses.Api (looking up the parent expense's owner/status to authorize
+// upload). Declare receiptsApi first so expensesApi can
 // reference it inline; the reverse reference is added below once expensesApi
 // exists — Aspire resource references don't need to be declared in a single
 // fluent chain.

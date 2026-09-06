@@ -3,8 +3,8 @@ using Meridian.Services.DTOs;
 
 namespace Meridian.Expenses.Api.Services;
 
-// Story 4.0: Expenses.Api's first outbound call to another Meridian API — blocks
-// Submit when the expense has no receipts. Authenticates as the caller via
+// Expenses.Api's first outbound call to another Meridian API — blocks Submit
+// when the expense has no receipts. Authenticates as the caller via
 // BearerForwardingHandler; safe here because Submit is always called by the
 // expense's owner, so the receipts this returns are always the caller's own.
 public sealed class ReceiptsLookupClient(HttpClient http)

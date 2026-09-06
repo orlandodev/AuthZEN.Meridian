@@ -26,9 +26,8 @@ builder.Services.AddValidation();
 builder.AddMeridianApiAuthentication(audience: "meridian.expenses.api");
 
 // --- PEP: this API delegates authorization decisions to the PDP instead of
-// enforcing in-process (Stage 3). Authenticates to the PDP as itself via
-// client credentials — see the "meridian.pep" client in IdentityServer's
-// Config.cs.
+// enforcing in-process. Authenticates to the PDP as itself via client
+// credentials — see the "meridian.pep" client in IdentityServer's Config.cs.
 builder.Services.AddAuthZenPep(
     pdpBaseAddress: "https+http://pdp",
     identityServerTokenEndpoint: "https+http://identityserver/connect/token",
@@ -36,8 +35,8 @@ builder.Services.AddAuthZenPep(
     clientSecret: builder.Configuration["Pep:ClientSecret"]
         ?? throw new InvalidOperationException("Missing configuration: Pep:ClientSecret"));
 
-// --- Authorization: declarative role policies stay in-process (unchanged by
-// Stage 3 — only the resource-based handlers below now delegate to the PDP) ---
+// --- Authorization: declarative role policies stay in-process; only the
+// resource-based handlers below delegate to the PDP ---
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy(Policies.CanApprove, p =>
         p.RequireRole(Roles.Manager, Roles.Finance))
@@ -52,8 +51,8 @@ builder.Services.AddScoped<IAuthorizationHandler, SubmitHandler>();
 builder.Services.AddScoped<IAuthorizationHandler, ApprovalHandler>();
 builder.Services.AddScoped<ExpenseVisibilityFilter>();
 
-// Story 4.0: blocks Submit when the expense has no receipts yet — see
-// ReceiptsLookupClient and BearerForwardingHandler.
+// Blocks Submit when the expense has no receipts yet — see ReceiptsLookupClient
+// and BearerForwardingHandler.
 builder.Services.AddHttpClient<ReceiptsLookupClient>(c => c.BaseAddress = new("https+http://receipts-api"))
     .AddHttpMessageHandler<BearerForwardingHandler>();
 

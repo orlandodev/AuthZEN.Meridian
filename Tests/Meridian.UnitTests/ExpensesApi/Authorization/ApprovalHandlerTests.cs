@@ -10,10 +10,10 @@ using static Meridian.UnitTests.ExpensesApi.TestSupport.AuthorizationTestData;
 
 namespace Meridian.UnitTests.ExpensesApi.Authorization;
 
-// Stage 3: the role/amount/department scenarios this class used to cover now
-// live in the PDP itself (see RulesEngineTests' Expense_Decide_* cases). This
-// handler's own job is narrower: map the desired outcome to the right PDP
-// action, build the SARC request, and honor whatever the PDP decides.
+// The role/amount/department scenarios live in the PDP itself (see
+// RulesEngineTests' Expense_Decide_* cases). This handler's own job is
+// narrower: map the desired outcome to the right PDP action, build the SARC
+// request, and honor whatever the PDP decides.
 public class ApprovalHandlerTests
 {
     private static async Task<AuthorizationHandlerContext> RunAsync(

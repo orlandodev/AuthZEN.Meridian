@@ -16,9 +16,6 @@ public static class PepServiceCollectionExtensions
     //       identityServerTokenEndpoint: "https+http://identityserver/connect/token",
     //       clientId: "meridian.pep",
     //       clientSecret: <from configuration/user-secrets, never hardcoded>);
-    //
-    // Not yet called anywhere in this solution: no API is a PEP until Stage 3
-    // wires this in for Expenses.Api (and Stage 4 for Receipts/Reporting).
     public static IServiceCollection AddAuthZenPep(
         this IServiceCollection services,
         string pdpBaseAddress,

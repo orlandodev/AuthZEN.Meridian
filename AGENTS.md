@@ -60,7 +60,8 @@ The core idea: **authentication** (Duende — *who you are*) ≠ **authorization
 | **5** | Swap PDP | Drop OPA/OpenFGA-backed PDP; APIs unchanged (contract-driven) |
 | **6** | Observability | Enable Meridian.AuthZen ActivitySource + Meter for permit/deny telemetry |
 
-See [README.md](README.md#the-stage-roadmap-course-spine) for the full vision.
+See [README.md](README.md#the-stage-roadmap-course-spine) for the full vision, and
+[changelog.md](changelog.md) for the stage-by-stage annotations associated with specific source files.
 
 ### Layered Components
 
@@ -104,6 +105,20 @@ See [README.md](README.md#the-stage-roadmap-course-spine) for the full vision.
 ---
 
 ## Key Conventions & Patterns
+
+### Recording stage progress → [changelog.md](changelog.md), not inline comments
+
+Development-stage narrative — "what this stage/story did", "in Stage N this
+becomes…", "(Stage 1 drift)", "Story 4.0: …" — lives **only** in
+[changelog.md](changelog.md), added as a stage- and file-specific entry when the
+change lands. Do **not** reintroduce it as inline C# comments.
+
+- Inline comments describe **current behavior**, not project history or roadmap.
+- When a change belongs to a stage/story, add an entry under that stage's section
+  in `changelog.md`: quote or write the note, and reference the file + enclosing
+  type/member (not a line number).
+- Architectural notes that name a technology but no stage (e.g. "swapping the PDP
+  implementation never changes this interface") may stay inline.
 
 ### Authorization Rules (Stage 0 — In-Process)
 

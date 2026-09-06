@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace Meridian.Expenses.Api.Authorization;
 
-// Stage 3/Story 4.0: delegates the Submit owner-check to the PDP, the same way
+// Delegates the Submit owner-check to the PDP, the same way
 // OwnerOrPrivilegedHandler and ApprovalHandler delegate read/decide — keeps
 // every expense-lifecycle authorization decision in one place (ExpenseRules)
 // instead of splitting it between the PDP and inline endpoint checks.

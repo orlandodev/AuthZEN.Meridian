@@ -64,12 +64,12 @@ public static class ExpenseEndpoints
             .WithDescription("Creates a Draft expense owned by the caller. Department is derived from the " +
                 "caller's own claim and is never accepted from the request body.");
 
-        // Submit: Draft -> Submitted, owner-only. Story 4.0's first real API-to-API
-        // call — blocks the transition if the expense has no receipts yet, by asking
-        // Receipts.Api (see ReceiptsLookupClient). Owner-only rather than routed
-        // through OwnerOrPrivilegedRequirement: Finance/Manager can view a submitted
-        // expense, but only the owner may ever submit one — delegated to the PDP via
-        // SubmitRequirement, same pattern as the status decision below.
+        // Submit: Draft -> Submitted, owner-only. Blocks the transition if the
+        // expense has no receipts yet, by asking Receipts.Api (see
+        // ReceiptsLookupClient). Owner-only rather than routed through
+        // OwnerOrPrivilegedRequirement: Finance/Manager can view a submitted
+        // expense, but only the owner may ever submit one — delegated to the PDP
+        // via SubmitRequirement, same pattern as the status decision below.
         group.MapPost("/{id:guid}/submit", async (Guid id, ClaimsPrincipal user,
             IExpenseService expenses, IAuthorizationService authz, ReceiptsLookupClient receiptsLookup,
             CancellationToken ct) =>

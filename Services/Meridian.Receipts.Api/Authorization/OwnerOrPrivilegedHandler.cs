@@ -4,11 +4,10 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace Meridian.Receipts.Api.Authorization;
 
-// Stage 4 (Story 4.1): delegates the ownership/read decision to the PDP
-// instead of enforcing in-process. The manager-of branch this API's own check
-// never had (see AuthorizationPrimitives.cs — Receipt has no Department field
-// to key off) now applies here too, via ReceiptRules.CanRead: the Stage 1
-// drift is gone.
+// Delegates the ownership/read decision to the PDP instead of enforcing
+// in-process. The manager-of branch this API's own check never had (see
+// AuthorizationPrimitives.cs — Receipt has no Department field to key off) now
+// applies here too, via ReceiptRules.CanRead.
 public sealed class OwnerOrPrivilegedHandler(IPolicyDecisionClient pdp)
     : AuthorizationHandler<OwnerOrPrivilegedRequirement, ReceiptDto>
 {
