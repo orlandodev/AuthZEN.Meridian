@@ -21,7 +21,13 @@ namespace Meridian.IntegrationTests.TestSupport;
 // the same swap) — no Testcontainers Postgres needed here. Blob storage is
 // swapped for FakeReceiptBlobStorage for the same reason: it's orthogonal to
 // what's under test, but Program.cs's startup seeder needs something working.
-public sealed class ReceiptsApiFactory(PdpApiFactory pdp) : WebApplicationFactory<ReceiptsAssembly::Program>
+// databaseName defaults to the name ReceiptsPdpFixture has always used, so that
+// fixture is unchanged; a second fixture standing up its own ReceiptsApiFactory
+// in the same process (e.g. CrossServicePolicyFixture) must pass a distinct name
+// — EF Core's InMemory provider shares storage by name process-wide, so two
+// hosts on one name race to seed under xUnit's cross-collection parallelization.
+public sealed class ReceiptsApiFactory(PdpApiFactory pdp, string databaseName = "integration-tests-receiptsdb")
+    : WebApplicationFactory<ReceiptsAssembly::Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -42,7 +48,7 @@ public sealed class ReceiptsApiFactory(PdpApiFactory pdp) : WebApplicationFactor
             // ExpensesDbContext: EF Core's InMemory provider tracks "created" state
             // by name only, so sharing a name across two models means whichever
             // EnsureCreated() runs second skips its own HasData seeding.
-            TestDbContextReplacement.UseInMemory<ReceiptsDbContext>(services, "integration-tests-receiptsdb");
+            TestDbContextReplacement.UseInMemory<ReceiptsDbContext>(services, databaseName);
 
             services.RemoveAll<IReceiptBlobStorage>();
             services.AddSingleton<IReceiptBlobStorage, FakeReceiptBlobStorage>();

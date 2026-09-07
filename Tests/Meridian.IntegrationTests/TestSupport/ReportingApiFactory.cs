@@ -18,7 +18,13 @@ namespace Meridian.IntegrationTests.TestSupport;
 // without sockets or Duende. ReportingRepository uses no relational-only EF
 // Core feature, so the database stays on InMemory — no Testcontainers Postgres
 // needed here.
-public sealed class ReportingApiFactory(PdpApiFactory pdp) : WebApplicationFactory<ReportingAssembly::Program>
+// databaseName defaults to the name ReportingPdpFixture has always used, so that
+// fixture is unchanged; a second fixture standing up its own ReportingApiFactory
+// in the same process must pass a distinct name — EF Core's InMemory provider
+// shares storage by name process-wide, so two hosts on one name race to seed
+// under xUnit's cross-collection parallelization.
+public sealed class ReportingApiFactory(PdpApiFactory pdp, string databaseName = "integration-tests-reportingdb")
+    : WebApplicationFactory<ReportingAssembly::Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -38,7 +44,7 @@ public sealed class ReportingApiFactory(PdpApiFactory pdp) : WebApplicationFacto
             // EF Core's InMemory provider tracks "created" state by name only, so
             // sharing a name across two models means whichever EnsureCreated()
             // runs second skips its own HasData seeding.
-            TestDbContextReplacement.UseInMemory<ReportingDbContext>(services, "integration-tests-reportingdb");
+            TestDbContextReplacement.UseInMemory<ReportingDbContext>(services, databaseName);
 
             services.AddAuthentication(EndUserTestAuthHandler.SchemeName)
                 .AddScheme<AuthenticationSchemeOptions, EndUserTestAuthHandler>(EndUserTestAuthHandler.SchemeName, _ => { });

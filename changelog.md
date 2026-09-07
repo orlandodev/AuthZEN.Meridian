@@ -197,11 +197,12 @@ handlers stop enforcing and delegate to the PDP behind the same
 
 ---
 
-## Stage 4 — Reuse: Receipts / Reporting on the same PDP (Stories 4.0–4.2)
+## Stage 4 — Reuse: Receipts / Reporting on the same PDP (Stories 4.0–4.3)
 
 One policy, three enforcement points. Story 4.0 adds the receipt-gating
 inter-service calls and reject-with-reason; Story 4.1 converts `Receipts.Api`
-to a PEP; Story 4.2 (pending) converts `Reporting.Api`.
+to a PEP; Story 4.2 converts `Reporting.Api`; Story 4.3 proves and measures the
+batched authorization call that shipped with `Expenses.Api` in Stage 3.
 
 ### Receipts.Api PEP registration (Story 4.1)
 > --- PEP: Stage 4 (Story 4.1) — this API delegates authorization decisions
@@ -464,6 +465,40 @@ to a PEP; Story 4.2 (pending) converts `Reporting.Api`.
 `Apps/Meridian.ExpensePortal/Controllers/ReportsController.cs` — `ReportsController.BuildExportWindowText` · _retrospective_
 
 `Tests/Meridian.UnitTests/ReportingApi/Authorization/` — `DepartmentSpendReadFilterTests`, `DepartmentSpendExportFilterTests` · _retrospective_
+
+### Batch evaluation proven and measured (Story 4.3)
+> The batched authorization caller shipped with `Expenses.Api` in Stage 3:
+> `ExpenseVisibilityFilter` narrows a manager's department-scoped candidate
+> expenses through one `POST /access/v1/evaluations` rather than one
+> `POST /access/v1/evaluation` per candidate. Story 4.3 adds the integration
+> coverage that call never had — a parity guard against the single-evaluation
+> path, and a latency comparison from real span timings.
+
+`Services/Meridian.Expenses.Api/Authorization/ExpenseVisibilityFilter.cs` — `ExpenseVisibilityFilter` · _retrospective_
+
+### Batch parity regression guard (Story 4.3)
+> `AreAllowedAsync` over N candidate expenses must return exactly what N
+> individual `IsAllowedAsync` calls would, in the same order — a guard against
+> the boxcar path and the single-evaluation path drifting apart.
+
+`Tests/Meridian.IntegrationTests/BatchEvaluationTests.cs` — `AreAllowedAsync_OverCandidateExpenses_MatchesSequentialSingleCalls` · _retrospective_
+
+### Batch latency comparison (Story 4.3)
+> Sums the `authz.evaluate` client spans `AuthZenPolicyDecisionClient` already
+> emits for N single calls and compares them to the one `authz.evaluate.batch`
+> span, over ~50 synthetic candidates with warm-up runs discarded (mean + p95).
+> In-process numbers, so only a loose `batch <= sequential` sanity assertion —
+> the headline figure comes from a live AppHost run.
+
+`Tests/Meridian.IntegrationTests/BatchEvaluationTests.cs` — `AreAllowedAsync_VersusNSequentialSingleCalls_SpendsLessTimeInThePdp` · _retrospective_
+
+### Cross-service policy hot-reload (Story 4.3)
+> One `RoleAssignments` edit in the shared PDP mid-test flips u-nadia's
+> `Expenses.Api`, `Receipts.Api` and `Reporting.Api` requests from 200 to 403 on
+> the next call, with no restart — `RuleWorkspace` re-queries `AsNoTracking`
+> every evaluation, so there is nothing to invalidate.
+
+`Tests/Meridian.IntegrationTests/CrossServicePolicyReloadTests.cs` — `PolicyDataEdit_TakesEffectAcrossAllThreeApis_WithNoRedeploy` · _retrospective_
 
 ---
 
