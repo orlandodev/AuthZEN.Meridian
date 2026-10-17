@@ -23,14 +23,17 @@ Meridian.slnx
 │   └── Meridian.ExpensePortal      ASP.NET Core MVC app (OIDC) — the user-facing UI
 ├── Services/
 │   ├── Meridian.Expenses.Api       *** Stage 0 traditional authorization lives here ***
-│   ├── Meridian.Receipts.Api       skeleton PEP (fleshed out in Stage 4)
-│   └── Meridian.Reporting.Api       skeleton PEP (fleshed out in Stage 4)
+│   ├── Meridian.Receipts.Api       Policy Enforcement Point (PEP) for receipts; delegates to PDP
+│   └── Meridian.Reporting.Api      Policy Enforcement Point (PEP) for reporting; delegates to PDP
 ├── Authorization/
-│   ├── Meridian.Pdp.Service        the PDP: /access/v1/evaluation, /evaluations, metadata
+│   ├── Meridian.Pdp.Core           shared decision core + AuthZEN endpoints (/access/v1/*)
+│   ├── Meridian.Pdp.Service        homegrown PDP host: C# rules reading policydb
+│   ├── Meridian.Pdp.Opa            OPA-backed PDP host: same contract, Rego in policies/
 │   ├── AuthZen.Contracts           SARC wire model (AuthZEN 1.0)
 │   └── AuthZen.Pep                 PEP client: builds requests, batches, OTEL, DI helper
 └── Tests/
-    ├── Meridian.AuthZen.ConformanceTests
+    ├── Meridian.AuthZen.ConformanceTests   homegrown vs. OPA decision equivalence
+    ├── Meridian.IntegrationTests
     └── Meridian.UnitTests
 ```
 
@@ -40,6 +43,18 @@ Meridian.slnx
 dotnet restore
 dotnet run --project Aspire/Meridian.AppHost
 ```
+
+Podman (or Docker) must be running: Aspire provisions Postgres and, when selected,
+the OPA server as containers. The AppHost runs the homegrown PDP by default; to run
+the OPA-backed PDP instead (no PEP changes), pass the engine on the command line or
+set `Pdp__Engine=opa`:
+
+```
+dotnet run --project Aspire/Meridian.AppHost -- --Pdp:Engine=opa
+```
+
+The conformance suite (`dotnet test Tests/Meridian.AuthZen.ConformanceTests`) starts
+its own OPA container, so it also needs Podman or Docker.
 
 Open the **Aspire dashboard** (URL printed on startup) to see every service, its logs,
 traces, and metrics. The test users (password `Pass123$`) are:
@@ -56,7 +71,7 @@ traces, and metrics. The test users (password `Pass123$`) are:
 > For the stage-by-stage annotations related to specific changes in the source, see [changelog.md](changelog.md).
 
 
-- **Stage 0 — Traditional (this scaffold).** `Meridian.Expenses.Api` enforces authorization
+- **Stage 0 — Traditional (base scaffold).** `Meridian.Expenses.Api` enforces authorization
   in-process: role policies, a resource-based ownership handler (`OwnerOrPrivilegedHandler`),
   and an imperative amount-limit rule (`ApprovalRules`). No PDP involved.
 - **Stage 1 — Duplicate the ownership/role logic into `Receipts.Api`;
@@ -67,17 +82,18 @@ traces, and metrics. The test users (password `Pass123$`) are:
   handlers, delegate to the PDP behind the same `[Authorize]`/endpoint-filter seam.
 - **Stage 4 — Reuse.** Point `Receipts.Api` and `Reporting.Api` at the same PDP.
   One policy, three enforcement points. Demo the batch `/access/v1/evaluations` from Reporting.
-- **Stage 5 — Swap the PDP.** Drop in an OPA/OpenFGA-backed PDP behind the identical
+- **Stage 5 — Swap the PDP.** Drop in an OPA-backed PDP behind the identical
   contract; PEPs don't change. Turn `ConformanceTests` into a real equivalence suite.
+  An OpenFGA/ReBAC-backed PDP is intentionally deferred.
+  `Pdp:Engine` in the AppHost's `appsettings.json` (`homegrown` or `opa`) picks which
+  engine runs as `pdp`.
 - **Stage 6 — Observability.** The `Meridian.AuthZen` ActivitySource + Meter (already wired
   in `ServiceDefaults` and `AuthZenPolicyDecisionClient`) light up a live permit/deny view.
 
-## Git strategy, licensing, and third-party notices
+## Licensing, and third-party notices
 
-See `GIT-AND-RELEASE-STRATEGY.md` for the tagging convention used to mark the
-end of each stage and replay any of them on demand. This repo is MIT-licensed
-(`LICENSE`) — but see `THIRD-PARTY-NOTICES.md` before you assume that makes
-the whole stack free for production use (Duende IdentityServer, in
+This repo is MIT-licensed (`LICENSE`) — but see `THIRD-PARTY-NOTICES.md` before you 
+assume that makes the whole stack free for production use (Duende IdentityServer, in
 particular, does not follow the repo's license).
 
 ## The one idea to keep visible

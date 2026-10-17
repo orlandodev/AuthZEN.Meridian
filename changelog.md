@@ -534,7 +534,9 @@ configured business timezone to its IANA id before sending it to OPA, because
 Rego's `time.*` builtins don't recognize Windows zone ids. The translator is
 covered by `Tests/Meridian.UnitTests/PdpOpa/OpaPolicyEngineTests.cs`, which
 checks the `input` facts it builds, the fail-closed handling of a missing
-`result`, and the timezone normalization.
+`result`, and the timezone normalization. `Meridian.AppHost` also takes a
+direct `MessagePack` 3.1.12 pin to address a vulnerability in the version it
+previously resolved.
 
 `Authorization/Meridian.Pdp.Core/`, `Authorization/Meridian.Pdp.Opa/` · _retrospective_
 
