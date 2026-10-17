@@ -1,8 +1,8 @@
 using AuthZen.Contracts;
 using Meridian.DataAccess.PdP;
-using Meridian.Pdp.Service.Pdp;
+using Meridian.Pdp.Core.Pdp;
 
-namespace Meridian.Pdp.Service.Reporting;
+namespace Meridian.Pdp.Core.Reporting;
 
 // The department-spend read and export decisions Reporting.Api delegates here
 // (see DepartmentSpendReadFilter / DepartmentSpendExportFilter). Read is

@@ -1,6 +1,6 @@
 using System.Text.Json;
 using AuthZen.Contracts;
-using Meridian.Pdp.Service.Pdp;
+using Meridian.Pdp.Core.Pdp;
 
 namespace Meridian.UnitTests.PdpService;
 

@@ -21,6 +21,8 @@
   <Folder Name="/Authorization/">
     <Project Path="Authorization/AuthZen.Contracts/AuthZen.Contracts.csproj" />
     <Project Path="Authorization/AuthZen.Pep/AuthZen.Pep.csproj" />
+    <Project Path="Authorization/Meridian.Pdp.Core/Meridian.Pdp.Core.csproj" />
+    <Project Path="Authorization/Meridian.Pdp.Opa/Meridian.Pdp.Opa.csproj" />
     <Project Path="Authorization/Meridian.Pdp.Service/Meridian.Pdp.Service.csproj" />
   </Folder>
   <Folder Name="/Tests/">

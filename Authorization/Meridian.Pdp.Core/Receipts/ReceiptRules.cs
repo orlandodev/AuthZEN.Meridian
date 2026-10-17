@@ -1,8 +1,8 @@
 using AuthZen.Contracts;
 using Meridian.DataAccess.PdP;
-using Meridian.Pdp.Service.Pdp;
+using Meridian.Pdp.Core.Pdp;
 
-namespace Meridian.Pdp.Service.Receipts;
+namespace Meridian.Pdp.Core.Receipts;
 
 // The receipt read rule. Adds a manager-of branch that Receipts.Api's own
 // OwnerOrPrivilegedHandler lacks (Receipt has no Department field there to key

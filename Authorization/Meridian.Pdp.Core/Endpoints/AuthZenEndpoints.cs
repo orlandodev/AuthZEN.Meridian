@@ -1,7 +1,10 @@
 using AuthZen.Contracts;
-using Meridian.Pdp.Service.Pdp;
+using Meridian.Pdp.Core.Pdp;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 
-namespace Meridian.Pdp.Service.Endpoints;
+namespace Meridian.Pdp.Core.Endpoints;
 
 public static class AuthZenEndpoints
 {

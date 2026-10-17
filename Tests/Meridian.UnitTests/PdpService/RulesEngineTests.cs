@@ -1,6 +1,6 @@
 using Meridian.DataAccess.Models;
 using Meridian.DataAccess.PdP;
-using Meridian.Pdp.Service.Pdp;
+using Meridian.Pdp.Core.Pdp;
 using Meridian.UnitTests.TestSupport;
 
 namespace Meridian.UnitTests.PdpService;

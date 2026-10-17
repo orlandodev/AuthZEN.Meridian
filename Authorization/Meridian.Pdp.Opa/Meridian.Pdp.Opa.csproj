@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <!-- Direct reference required, not just transitive via Meridian.ServiceDefaults:
+         this package's own build-time .targets (wiring the InterceptorsNamespaces
+         MSBuild property its XML-comment source generator needs) only applies to
+         projects that reference it directly. Every other Meridian API already has
+         this reference for the same reason. -->
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.OpenApi" />
+    <!-- Used to gather the same policydb facts (roles, manager-of, amount
+         limits) RuleWorkspace already reads for the homegrown engine — this
+         host feeds those facts into OPA's `input` instead of deciding on
+         them itself. -->
+    <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <ProjectReference Include="..\..\Aspire\Meridian.ServiceDefaults\Meridian.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\Common\Meridian.DataAccess\Meridian.DataAccess.csproj" />
+    <!-- Shared AuthZEN contract + decision-core seam also hosted by
+         Meridian.Pdp.Service (AuthZenEndpoints, IPolicyEngine, RuleWorkspace,
+         RulePrimitives). This host registers OpaPolicyEngine instead of
+         PolicyRulesEngine as the IPolicyEngine implementation. -->
+    <ProjectReference Include="..\Meridian.Pdp.Core\Meridian.Pdp.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Rego policies are source, not build output — they're bind-mounted
+         directly into the OPA container from this folder (see AppHost.cs),
+         never compiled or copied into this host's own output. Excluded here
+         only so `dotnet build` doesn't treat *.rego as loose content. -->
+    <None Remove="policies\**\*.rego" />
+  </ItemGroup>
+</Project>

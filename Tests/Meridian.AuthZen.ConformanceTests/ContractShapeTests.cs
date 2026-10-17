@@ -1,5 +1,6 @@
 using System.Text.Json;
 using AuthZen.Contracts;
+using FluentAssertions;
 using Xunit;
 
 namespace Meridian.AuthZen.ConformanceTests;
@@ -21,9 +22,9 @@ public class ContractShapeTests
 
         var json = JsonSerializer.Serialize(request);
 
-        Assert.Contains("\"subject\"", json);
-        Assert.Contains("\"action\"", json);
-        Assert.Contains("\"resource\"", json);
+        json.Should().Contain("\"subject\"");
+        json.Should().Contain("\"action\"");
+        json.Should().Contain("\"resource\"");
     }
 
     [Fact]
@@ -45,14 +46,14 @@ public class ContractShapeTests
 
         var json = JsonSerializer.Serialize(batch);
 
-        Assert.Contains("\"subject\"", json);
-        Assert.Contains("\"action\"", json);
-        Assert.Contains("\"evaluations\"", json);
-        Assert.DoesNotContain("\"ownerId\"", json);
+        json.Should().Contain("\"subject\"");
+        json.Should().Contain("\"action\"");
+        json.Should().Contain("\"evaluations\"");
+        json.Should().NotContain("\"ownerId\"");
         // Entries omit subject/action entirely — no stray nulls in the wire shape.
         var evaluationsJson = JsonSerializer.Serialize(batch.Evaluations[0]);
-        Assert.DoesNotContain("\"subject\"", evaluationsJson);
-        Assert.DoesNotContain("\"action\"", evaluationsJson);
+        evaluationsJson.Should().NotContain("\"subject\"");
+        evaluationsJson.Should().NotContain("\"action\"");
     }
 
     [Fact]
@@ -62,7 +63,7 @@ public class ContractShapeTests
 
         var json = JsonSerializer.Serialize(response);
 
-        Assert.Contains("\"decision\"", json);
-        Assert.DoesNotContain("\"context\"", json);
+        json.Should().Contain("\"decision\"");
+        json.Should().NotContain("\"context\"");
     }
 }
