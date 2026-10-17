@@ -538,12 +538,36 @@ checks the `input` facts it builds, the fail-closed handling of a missing
 
 `Authorization/Meridian.Pdp.Core/`, `Authorization/Meridian.Pdp.Opa/` · _retrospective_
 
-### Conformance suite placeholder
-> Placeholder. In Stage 5 this becomes a real conformance suite that runs the
-> same SARC requests against the homegrown PDP and an OPA-backed PDP and
-> asserts identical decisions — proving the standard makes PDPs interchangeable.
+### Story 5.2 — Conformance suite
 
-`Tests/Meridian.AuthZen.ConformanceTests/ContractShapeTests.cs` — `ContractShapeTests` · _forward-looking_
+`Meridian.AuthZen.ConformanceTests` is now a real equivalence suite.
+`PdpConformanceTests` runs every request in `ConformanceCases` through both
+`IPolicyEngine` implementations — the homegrown `PolicyRulesEngine` and
+`OpaPolicyEngine` talking to a real OPA server — over the same seeded policydb
+facts and the same fixed host clock, and asserts both return the same,
+expected decision. Asserting the expected value as well as equality means a
+rule both engines get wrong still fails. The matrix covers every
+`(resourceType, action)` pair `PolicyRulesEngine` dispatches on, crossed with
+the four seeded users plus an unseeded subject and the resource states each
+rule branches on (owner vs. not, Draft/Submitted including case variants,
+missing properties, amounts below/at/above the 5000 manager limit), the
+business-hours export window at its 09:00/17:00 edges, on a weekend, and
+across EST/EDT, and default-deny for unmatched pairs. Each case is its own
+named theory row. Requests are JSON round-tripped first so both engines see
+the `JsonElement`-valued properties a real PEP call produces, not the CLR
+values `RequestFactory` builds.
+
+`OpaContainerFixture` starts `openpolicyagent/opa` via Testcontainers, pinned
+to the same tag as the AppHost `"opa"` resource, and loads
+`Meridian.Pdp.Opa/policies/*.rego` copied into the test output, so the suite
+checks the Rego source itself. `PolicyDbContextTestFactory`, `RequestFactory`
+and `FakeTimeProvider` are link-compiled from `Meridian.UnitTests` rather than
+copied, so both suites share one seed and one set of request shapes. The
+project also takes the direct `SSH.NET` pin `Meridian.IntegrationTests`
+already uses, which overrides the vulnerable version Testcontainers pulls in
+transitively. Requires Podman (or Docker) to be running.
+
+`Tests/Meridian.AuthZen.ConformanceTests/` — `PdpConformanceTests`, `ConformanceCases`, `ConformanceCase`, `TestSupport/OpaContainerFixture` · _retrospective_
 
 ### Decision core swap
 > The pluggable decision core. Stage 2 replaces StubPolicyEngine with a real

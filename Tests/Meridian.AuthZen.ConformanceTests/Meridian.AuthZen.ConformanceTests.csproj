@@ -6,6 +6,9 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
     <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+    <PackageReference Include="SSH.NET" />
+    <PackageReference Include="Testcontainers" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio">
       <PrivateAssets>all</PrivateAssets>
@@ -14,5 +17,23 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Authorization\AuthZen.Contracts\AuthZen.Contracts.csproj" />
+    <ProjectReference Include="..\..\Authorization\Meridian.Pdp.Core\Meridian.Pdp.Core.csproj" />
+    <ProjectReference Include="..\..\Authorization\Meridian.Pdp.Opa\Meridian.Pdp.Opa.csproj" />
+    <ProjectReference Include="..\..\Common\Meridian.DataAccess\Meridian.DataAccess.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Shared with Meridian.UnitTests rather than copied, so both suites
+         decide against the exact same seeded policydb facts and request shapes. -->
+    <Compile Include="..\Meridian.UnitTests\PdpService\PolicyDbContextTestFactory.cs" Link="TestSupport\PolicyDbContextTestFactory.cs" />
+    <Compile Include="..\Meridian.UnitTests\PdpService\RequestFactory.cs" Link="TestSupport\RequestFactory.cs" />
+    <Compile Include="..\Meridian.UnitTests\TestSupport\FakeTimeProvider.cs" Link="TestSupport\FakeTimeProvider.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The real Rego source, copied next to the test assembly so
+         OpaContainerFixture loads exactly what the "opa" AppHost resource
+         bind-mounts. -->
+    <None Include="..\..\Authorization\Meridian.Pdp.Opa\policies\*.rego"
+          Link="policies\%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
