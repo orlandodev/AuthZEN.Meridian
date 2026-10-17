@@ -5,9 +5,8 @@ using Xunit;
 
 namespace Meridian.AuthZen.ConformanceTests;
 
-// Placeholder for the PDP conformance suite: identical SARC requests run
-// against interchangeable PDP implementations must yield identical decisions,
-// proving the standard makes PDPs interchangeable.
+// Wire-shape checks for the AuthZEN contract types themselves; decision
+// equivalence across PDP implementations lives in PdpConformanceTests.
 public class ContractShapeTests
 {
     [Fact]
