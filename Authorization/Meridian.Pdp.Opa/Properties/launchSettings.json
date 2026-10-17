@@ -3,10 +3,11 @@
     "Meridian.Pdp.Opa": {
       "commandName": "Project",
       "launchBrowser": true,
+      "launchUrl": "scalar",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
-      "applicationUrl": "https://localhost:60713;http://localhost:60714"
+      "applicationUrl": "https://localhost:59580"
     }
   }
 }
