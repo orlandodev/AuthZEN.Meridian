@@ -69,6 +69,8 @@ traces, and metrics. The test users (password `Pass123$`) are:
   One policy, three enforcement points. Demo the batch `/access/v1/evaluations` from Reporting.
 - **Stage 5 — Swap the PDP.** Drop in an OPA/OpenFGA-backed PDP behind the identical
   contract; PEPs don't change. Turn `ConformanceTests` into a real equivalence suite.
+  `Pdp:Engine` in the AppHost's `appsettings.json` (`homegrown` or `opa`) picks which
+  engine runs as `pdp`.
 - **Stage 6 — Observability.** The `Meridian.AuthZen` ActivitySource + Meter (already wired
   in `ServiceDefaults` and `AuthZenPolicyDecisionClient`) light up a live permit/deny view.
 

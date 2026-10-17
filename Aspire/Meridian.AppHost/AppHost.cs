@@ -44,40 +44,27 @@ var identity = builder.AddProject<Projects.Meridian_IdentityServer>("identityser
             .WaitFor(identityDb);
 
 // --- Policy Decision Point ---
-var pdp = builder.AddProject<Projects.Meridian_Pdp_Service>("pdp")
-                 .WithUrlForEndpoint("https", url => url.DisplayText = "Policy Decision Point")
-                 .WithReference(policyDb)
-                 .WithReference(identity)
-                 .WithEnvironment("BusinessHours__TimeZone", businessTimeZone)
-                 .WaitFor(policyDb);
+// Exactly one PDP backs the "pdp" resource every PEP references, and
+// Pdp:Engine picks which (appsettings.json, overridable with the
+// Pdp__Engine environment variable): "homegrown" runs Meridian.Pdp.Service's
+// C# rules, "opa" runs Meridian.Pdp.Opa backed by a real Open Policy Agent.
+// Both serve the identical AuthZEN contract and pdp.evaluate audience, so no
+// PEP or AuthZen.Pep code changes either way.
+var pdpEngine = builder.Configuration["Pdp:Engine"] ?? "homegrown";
 
-// --- OPA-backed alternative PDP ---
-// Runnable side by side with the homegrown "pdp" above for manual decision
-// comparison. Real Open Policy Agent — the official image published by the
-// OPA project (https://hub.docker.com/r/openpolicyagent/opa) — pulled and
-// run via Podman exactly like the Postgres/Azurite containers above. Pinned
-// to an explicit release tag (never :latest) so a routine `podman pull`
-// can't silently change decision behavior out from under the conformance
-// suite. Rego policies are bind-mounted in from source, never baked into
-// the image — see Meridian.Pdp.Opa/README.md for how the pieces fit
-// together and Meridian.Pdp.Opa/policies/*.rego for the actual logic.
-var opa = builder.AddContainer("opa", "openpolicyagent/opa", "1.20.2")
-                  .WithBindMount("../../Authorization/Meridian.Pdp.Opa/policies", "/policies")
-                  .WithArgs("run", "--server", "--addr", ":8181", "--log-level", "error", "/policies")
-                  .WithHttpEndpoint(targetPort: 8181, name: "http");
+var pdp = pdpEngine.ToLowerInvariant() switch
+{
+    "homegrown" => builder.AddProject<Projects.Meridian_Pdp_Service>("pdp")
+                          .WithUrlForEndpoint("https", url => url.DisplayText = "Policy Decision Point"),
+    "opa" => AddOpaBackedPdp(),
+    _ => throw new InvalidOperationException(
+        $"Unknown Pdp:Engine '{pdpEngine}'. Expected 'homegrown' or 'opa'.")
+};
 
-var pdpOpa = builder.AddProject<Projects.Meridian_Pdp_Opa>("pdp-opa")
-                     .WithUrlForEndpoint("https", url => url.DisplayText = "Policy Decision Point (OPA)")
-                     .WithReference(opa.GetEndpoint("http"))
-                     .WithReference(policyDb)
-                     .WithReference(identity)
-                     .WithEnvironment("BusinessHours__TimeZone", businessTimeZone)
-                     .WaitFor(policyDb)
-                     .WaitFor(opa)
-                     // Both PDPs run MigrateAsync against the same policydb;
-                     // starting this one after "pdp" is healthy keeps the two
-                     // migrations from racing on a fresh volume.
-                     .WaitFor(pdp);
+pdp.WithReference(policyDb)
+   .WithReference(identity)
+   .WithEnvironment("BusinessHours__TimeZone", businessTimeZone)
+   .WaitFor(policyDb);
 
 // --- Enforcement points ---
 // Expenses.Api, Receipts.Api, and Reporting.Api are all PEPs: they delegate
@@ -133,3 +120,24 @@ builder.AddProject<Projects.Meridian_ExpensePortal>("portal")
         .WithExternalHttpEndpoints();
 
 builder.Build().Run();
+
+// Real Open Policy Agent — the official image published by the OPA project
+// (https://hub.docker.com/r/openpolicyagent/opa) — pulled and run via Podman
+// exactly like the Postgres/Azurite containers above, with Meridian.Pdp.Opa
+// in front of it as the "pdp". Pinned to an explicit release tag (never
+// :latest) so a routine `podman pull` can't silently change decision behavior
+// out from under the conformance suite, which pins the same tag. Rego
+// policies are bind-mounted in from source, never baked into the image — see
+// Meridian.Pdp.Opa/README.md for how the pieces fit together.
+IResourceBuilder<ProjectResource> AddOpaBackedPdp()
+{
+    var opa = builder.AddContainer("opa", "openpolicyagent/opa", "1.20.2")
+                     .WithBindMount("../../Authorization/Meridian.Pdp.Opa/policies", "/policies")
+                     .WithArgs("run", "--server", "--addr", ":8181", "--log-level", "error", "/policies")
+                     .WithHttpEndpoint(targetPort: 8181, name: "http");
+
+    return builder.AddProject<Projects.Meridian_Pdp_Opa>("pdp")
+                  .WithUrlForEndpoint("https", url => url.DisplayText = "Policy Decision Point (OPA)")
+                  .WithReference(opa.GetEndpoint("http"))
+                  .WaitFor(opa);
+}
