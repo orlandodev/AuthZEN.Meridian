@@ -13,6 +13,7 @@
 		<PackageReference Include="Aspire.Hosting.AppHost" />
 		<PackageReference Include="Aspire.Hosting.PostgreSQL" />
 		<PackageReference Include="Aspire.Hosting.Azure.Storage" />
+		<PackageReference Include="MessagePack" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\..\Apps\Meridian.ExpensePortal\Meridian.ExpensePortal.csproj" />
@@ -21,6 +22,7 @@
 		<ProjectReference Include="..\..\Services\Meridian.Receipts.Api\Meridian.Receipts.Api.csproj" />
 		<ProjectReference Include="..\..\Services\Meridian.Reporting.Api\Meridian.Reporting.Api.csproj" />
 		<ProjectReference Include="..\..\Authorization\Meridian.Pdp.Service\Meridian.Pdp.Service.csproj" />
+		<ProjectReference Include="..\..\Authorization\Meridian.Pdp.Opa\Meridian.Pdp.Opa.csproj" />
 	</ItemGroup>
 
 </Project>

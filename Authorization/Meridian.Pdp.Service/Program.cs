@@ -1,6 +1,6 @@
 using Meridian.DataAccess.PdP;
-using Meridian.Pdp.Service.Endpoints;
-using Meridian.Pdp.Service.Pdp;
+using Meridian.Pdp.Core.Endpoints;
+using Meridian.Pdp.Core.Pdp;
 using Meridian.ServiceDefaults;
 
 var builder = WebApplication.CreateBuilder(args);

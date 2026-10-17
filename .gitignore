@@ -6,4 +6,4 @@ appsettings.*.local.json
 .claude/settings.local.json
 [Dd]ebug/
 [Rr]elease/
-/Identity/Meridian.IdentityServer/keys/is-signing-key-F78A4D4F72C9B646BEE8F71CB1A022A5.json
+/Identity/Meridian.IdentityServer/keys/

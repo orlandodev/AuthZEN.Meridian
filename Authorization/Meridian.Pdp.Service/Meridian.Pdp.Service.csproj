@@ -11,6 +11,10 @@
     <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" />
     <ProjectReference Include="..\..\Aspire\Meridian.ServiceDefaults\Meridian.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\Common\Meridian.DataAccess\Meridian.DataAccess.csproj" />
-    <ProjectReference Include="..\AuthZen.Contracts\AuthZen.Contracts.csproj" />
+    <!-- The decision core (IPolicyEngine, PolicyRulesEngine, AuthZenEndpoints,
+         the per-domain *Rules classes) lives in Meridian.Pdp.Core so
+         Meridian.Pdp.Opa can host the identical AuthZEN contract behind a
+         different IPolicyEngine implementation. -->
+    <ProjectReference Include="..\Meridian.Pdp.Core\Meridian.Pdp.Core.csproj" />
   </ItemGroup>
 </Project>

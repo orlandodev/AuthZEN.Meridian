@@ -1,8 +1,8 @@
 using AuthZen.Contracts;
 using Meridian.DataAccess.PdP;
-using Meridian.Pdp.Service.Pdp;
+using Meridian.Pdp.Core.Pdp;
 
-namespace Meridian.Pdp.Service.Expense;
+namespace Meridian.Pdp.Core.Expense;
 
 // Replicates Meridian.Expenses.Api's OwnerOrPrivilegedHandler (CanRead) and
 // ApprovalHandler (CanDecide), sourced from PolicyDbContext instead of JWT

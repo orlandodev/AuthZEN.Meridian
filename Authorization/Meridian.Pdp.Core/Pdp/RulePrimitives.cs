@@ -1,7 +1,7 @@
 using System.Text.Json;
 using AuthZen.Contracts;
 
-namespace Meridian.Pdp.Service.Pdp;
+namespace Meridian.Pdp.Core.Pdp;
 
 // Pure, DB-free helpers for reading SARC properties. Values deserialize as
 // boxed JsonElement, not string/decimal directly — centralized here so that

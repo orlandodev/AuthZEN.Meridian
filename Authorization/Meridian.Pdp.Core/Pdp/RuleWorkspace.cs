@@ -2,7 +2,7 @@ using Meridian.DataAccess.Models;
 using Meridian.DataAccess.PdP;
 using Microsoft.EntityFrameworkCore;
 
-namespace Meridian.Pdp.Service.Pdp;
+namespace Meridian.Pdp.Core.Pdp;
 
 // Per-evaluate-call DB access, with a subject-profile cache so a boxcarred
 // request doesn't re-query the same subject repeatedly. Domain-agnostic:

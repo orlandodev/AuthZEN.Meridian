@@ -51,6 +51,34 @@ var pdp = builder.AddProject<Projects.Meridian_Pdp_Service>("pdp")
                  .WithEnvironment("BusinessHours__TimeZone", businessTimeZone)
                  .WaitFor(policyDb);
 
+// --- OPA-backed alternative PDP ---
+// Runnable side by side with the homegrown "pdp" above for manual decision
+// comparison. Real Open Policy Agent — the official image published by the
+// OPA project (https://hub.docker.com/r/openpolicyagent/opa) — pulled and
+// run via Podman exactly like the Postgres/Azurite containers above. Pinned
+// to an explicit release tag (never :latest) so a routine `podman pull`
+// can't silently change decision behavior out from under the conformance
+// suite. Rego policies are bind-mounted in from source, never baked into
+// the image — see Meridian.Pdp.Opa/README.md for how the pieces fit
+// together and Meridian.Pdp.Opa/policies/*.rego for the actual logic.
+var opa = builder.AddContainer("opa", "openpolicyagent/opa", "1.20.2")
+                  .WithBindMount("../../Authorization/Meridian.Pdp.Opa/policies", "/policies")
+                  .WithArgs("run", "--server", "--addr", ":8181", "--log-level", "error", "/policies")
+                  .WithHttpEndpoint(targetPort: 8181, name: "http");
+
+var pdpOpa = builder.AddProject<Projects.Meridian_Pdp_Opa>("pdp-opa")
+                     .WithUrlForEndpoint("https", url => url.DisplayText = "Policy Decision Point (OPA)")
+                     .WithReference(opa.GetEndpoint("http"))
+                     .WithReference(policyDb)
+                     .WithReference(identity)
+                     .WithEnvironment("BusinessHours__TimeZone", businessTimeZone)
+                     .WaitFor(policyDb)
+                     .WaitFor(opa)
+                     // Both PDPs run MigrateAsync against the same policydb;
+                     // starting this one after "pdp" is healthy keeps the two
+                     // migrations from racing on a fresh volume.
+                     .WaitFor(pdp);
+
 // --- Enforcement points ---
 // Expenses.Api, Receipts.Api, and Reporting.Api are all PEPs: they delegate
 // authorization decisions to the PDP instead of enforcing in-process.

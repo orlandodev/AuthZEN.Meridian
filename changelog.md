@@ -83,7 +83,7 @@ ownership handler never grew a manager-of branch.
 > enforcing in-process — the manager-of branch is now a live behavior
 > change, not just a dormant normalization.
 
-`Authorization/Meridian.Pdp.Service/Receipts/ReceiptRules.cs` — `ReceiptRules` (class doc) · _retrospective_ (Stage 1, Stage 4)
+`Authorization/Meridian.Pdp.Core/Receipts/ReceiptRules.cs` — `ReceiptRules` (class doc) · _retrospective_ (Stage 1, Stage 4)
 
 ### PDP receipt-rule test asserts the normalization
 > Proves the PDP intentionally normalizes past Receipts.Api's
@@ -102,7 +102,7 @@ ownership handler never grew a manager-of branch.
 > rules engine reading the policy DB; Stage 5 swaps in an OPA/OpenFGA-backed
 > engine behind this same interface.
 
-`Authorization/Meridian.Pdp.Service/Pdp/IPolicyEngine.cs` — `IPolicyEngine` · _forward-looking_ (Stage 2, Stage 5)
+`Authorization/Meridian.Pdp.Core/Pdp/IPolicyEngine.cs` — `IPolicyEngine` · _forward-looking_ (Stage 2, Stage 5)
 
 ---
 
@@ -251,7 +251,7 @@ batched authorization call that shipped with `Expenses.Api` in Stage 3.
 > narrower than view, and this rule preserves that instead of reusing
 > CanRead's broader owner-or-privileged shape.
 
-`Authorization/Meridian.Pdp.Service/Receipts/ReceiptRules.cs` — `ReceiptRules.CanCreate` · _retrospective_
+`Authorization/Meridian.Pdp.Core/Receipts/ReceiptRules.cs` — `ReceiptRules.CanCreate` · _retrospective_
 
 ### Upload endpoint gating (Story 4.0)
 > Story 4.0: owner-only upload while the expense is still Draft. Manager
@@ -451,7 +451,7 @@ batched authorization call that shipped with `Expenses.Api` in Stage 3.
 > denied), that the window follows the zone's DST offset, and that a missing
 > zone throws.
 
-`Authorization/Meridian.Pdp.Service/Reporting/BusinessHoursPolicy.cs` — `BusinessHoursPolicy.IsWithinBusinessHours` · _retrospective_
+`Authorization/Meridian.Pdp.Core/Reporting/BusinessHoursPolicy.cs` — `BusinessHoursPolicy.IsWithinBusinessHours` · _retrospective_
 
 ### Portal names the export window instead of describing enforcement (feature/reporting-timezone-config)
 > The Reports page hint dropped its "enforced by the PDP in Stage 4, and
@@ -507,6 +507,37 @@ batched authorization call that shipped with `Expenses.Api` in Stage 3.
 Drop in an OPA/OpenFGA-backed PDP behind the identical contract; the PEPs do not
 change. Turn the conformance tests into a real equivalence suite.
 
+### Story 5.1 — Stand up an OPA-backed PDP
+
+The decision core (`IPolicyEngine`, `PolicyRulesEngine`, `AuthZenEndpoints`,
+and the per-domain `*Rules` classes) moved out of `Meridian.Pdp.Service` into
+a new shared library, `Meridian.Pdp.Core`, so a second host could reuse the
+identical AuthZEN contract without duplicating it. A new host,
+`Meridian.Pdp.Opa`, registers a different `IPolicyEngine` implementation —
+`OpaPolicyEngine` — which gathers the same policydb facts `RuleWorkspace`
+already exposed (subject role/department, manager-of, amount limits) and
+hands them to a real Open Policy Agent server as an `input` document, instead
+of deciding permit/deny itself. `policies/*.rego` in `Meridian.Pdp.Opa`
+mirrors `ExpenseRules`/`ReceiptRules`/`DepartmentSpendRules` rule-for-rule,
+including the business-hours export window — computed inside Rego from this
+host's own `TimeProvider`, never a caller-supplied instant, matching
+`BusinessHoursPolicy`'s existing guarantee. The OPA server itself is the
+official `openpolicyagent/opa` image, run as an Aspire container resource via
+Podman and pinned to an explicit release tag; see
+`Authorization/Meridian.Pdp.Opa/README.md` for the full request flow and
+where every piece comes from. `Aspire/Meridian.AppHost/AppHost.cs` runs both
+PDPs side by side (`"pdp"` and `"pdp-opa"`) for manual comparison; Story 5.3
+folds this into a single toggle. `"pdp-opa"` waits for `"pdp"` to be healthy
+because both hosts migrate the same `policydb`, and starting them together on a
+fresh volume would race the migrations. `OpaPolicyEngine` normalizes the
+configured business timezone to its IANA id before sending it to OPA, because
+Rego's `time.*` builtins don't recognize Windows zone ids. The translator is
+covered by `Tests/Meridian.UnitTests/PdpOpa/OpaPolicyEngineTests.cs`, which
+checks the `input` facts it builds, the fail-closed handling of a missing
+`result`, and the timezone normalization.
+
+`Authorization/Meridian.Pdp.Core/`, `Authorization/Meridian.Pdp.Opa/` · _retrospective_
+
 ### Conformance suite placeholder
 > Placeholder. In Stage 5 this becomes a real conformance suite that runs the
 > same SARC requests against the homegrown PDP and an OPA-backed PDP and
@@ -519,7 +550,7 @@ change. Turn the conformance tests into a real equivalence suite.
 > rules engine reading the policy DB; Stage 5 swaps in an OPA/OpenFGA-backed
 > engine behind this same interface.
 
-`Authorization/Meridian.Pdp.Service/Pdp/IPolicyEngine.cs` — `IPolicyEngine` · _forward-looking_ (also listed under Stage 2)
+`Authorization/Meridian.Pdp.Core/Pdp/IPolicyEngine.cs` — `IPolicyEngine` · _forward-looking_ (also listed under Stage 2; moved from `Meridian.Pdp.Service` in Story 5.1)
 
 ---
 
@@ -548,7 +579,7 @@ belongs to a stage or story:
 Architectural notes that name a technology but **no stage** may stay inline —
 e.g. `Authorization/AuthZen.Pep/IPolicyDecisionClient.cs` ("swapping the PDP
 implementation never changes this interface") and
-`Authorization/Meridian.Pdp.Service/Pdp/IPolicyEngine.cs` (implementations swap
+`Authorization/Meridian.Pdp.Core/Pdp/IPolicyEngine.cs` (implementations swap
 in behind the interface).
 
 See [AGENTS.md](AGENTS.md#recording-stage-progress--changelogmd-not-inline-comments)

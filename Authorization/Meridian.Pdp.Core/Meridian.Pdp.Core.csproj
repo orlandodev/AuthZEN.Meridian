@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Meridian.Pdp.Core</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- AuthZenEndpoints.cs maps minimal-API routes (IEndpointRouteBuilder,
+         Results.Ok) — a plain class library needs this FrameworkReference to
+         see ASP.NET Core types without becoming a Web SDK project itself. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The AuthZen contract types (IPolicyEngine, AuthZenEndpoints) and the
+         DB-backed decision core (PolicyRulesEngine, RuleWorkspace, the
+         per-domain *Rules classes). Both Meridian.Pdp.Service (homegrown) and
+         Meridian.Pdp.Opa (OPA-backed) host this same decision-core seam and
+         map the same AuthZEN routes; only the IPolicyEngine implementation
+         differs between the two hosts. -->
+    <ProjectReference Include="..\AuthZen.Contracts\AuthZen.Contracts.csproj" />
+    <ProjectReference Include="..\..\Common\Meridian.DataAccess\Meridian.DataAccess.csproj" />
+  </ItemGroup>
+</Project>

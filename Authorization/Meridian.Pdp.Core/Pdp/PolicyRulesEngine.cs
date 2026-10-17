@@ -2,11 +2,11 @@ using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using AuthZen.Contracts;
 using Meridian.DataAccess.PdP;
-using Meridian.Pdp.Service.Expense;
-using Meridian.Pdp.Service.Receipts;
-using Meridian.Pdp.Service.Reporting;
+using Meridian.Pdp.Core.Expense;
+using Meridian.Pdp.Core.Receipts;
+using Meridian.Pdp.Core.Reporting;
 
-namespace Meridian.Pdp.Service.Pdp;
+namespace Meridian.Pdp.Core.Pdp;
 
 public sealed class PolicyRulesEngine(
     PolicyDbContext db,

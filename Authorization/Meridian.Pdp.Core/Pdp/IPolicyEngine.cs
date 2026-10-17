@@ -1,6 +1,6 @@
 using AuthZen.Contracts;
 
-namespace Meridian.Pdp.Service.Pdp;
+namespace Meridian.Pdp.Core.Pdp;
 
 // The pluggable decision core. Implementations — a rules engine reading the
 // policy DB, or an OPA/OpenFGA-backed engine — swap in behind this interface.

@@ -1,4 +1,4 @@
-namespace Meridian.Pdp.Service.Reporting;
+namespace Meridian.Pdp.Core.Reporting;
 
 // The export window: Monday-Friday, 9am-5pm in the organization's business
 // timezone. Evaluated against the PDP's own TimeProvider, not a caller-supplied
