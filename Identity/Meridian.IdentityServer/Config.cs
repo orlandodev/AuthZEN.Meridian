@@ -98,8 +98,9 @@ public static class Config
             // Real PEP callers are server-to-server and never hit this — only
             // Scalar's interactive "Try it" on the PDP's own Scalar page does,
             // posting to /connect/token directly from the browser. Adjust to
-            // the PDP's Aspire-assigned URL, or use a fixed dev port (see
-            // Meridian.Pdp.Service/Properties/launchSettings.json).
+            // the PDP's Aspire-assigned URL, or use a fixed dev port. Both PDP
+            // hosts (Meridian.Pdp.Service and Meridian.Pdp.Opa) pin this same
+            // port in their launchSettings.json, so either engine works here.
             AllowedCorsOrigins = { "https://localhost:59580" }
         }
     ];

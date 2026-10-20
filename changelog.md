@@ -571,6 +571,29 @@ transitively. Requires Podman (or Docker) to be running.
 
 `Tests/Meridian.AuthZen.ConformanceTests/` — `PdpConformanceTests`, `ConformanceCases`, `ConformanceCase`, `TestSupport/OpaContainerFixture` · _retrospective_
 
+### Story 5.3 — Toggle which PDP backs the system
+
+`Aspire/Meridian.AppHost/AppHost.cs` now registers exactly one PDP under the
+`"pdp"` resource name every PEP references, chosen by the `Pdp:Engine` setting
+(`"homegrown"` by default in the AppHost's `appsettings.json`; override with the
+`Pdp__Engine` environment variable or `--Pdp:Engine=opa` on the command line).
+`"homegrown"` runs `Meridian.Pdp.Service`; `"opa"` runs `Meridian.Pdp.Opa` plus
+the pinned `openpolicyagent/opa` container, both added by the
+`AddOpaBackedPdp` local function. Unknown values fail at startup. This replaces
+Story 5.1's side-by-side `"pdp"`/`"pdp-opa"` pair, so the `"pdp-opa"`
+wait-for-`"pdp"` migration-race workaround is gone: only one host migrates
+`policydb` per run. No PEP, `AuthZen.Pep`, or PDP host code changed.
+
+`Meridian.Pdp.Opa/Properties/launchSettings.json` now pins the same
+`https://localhost:59580` port (and `scalar` launch URL) as
+`Meridian.Pdp.Service`, so the `meridian.pep` client's CORS origin in
+IdentityServer `Config.cs` serves Scalar's "Try it" whichever engine is live.
+`.claude/launch.json` gains an `aspire-apphost-opa` configuration that starts
+the AppHost with `--Pdp:Engine=opa`. The root `README.md` Stage 5 bullet and
+`AGENTS.md` roadmap table name the `Pdp:Engine` switch.
+
+`Aspire/Meridian.AppHost/AppHost.cs` — top-level PDP wiring, `AddOpaBackedPdp` · `Aspire/Meridian.AppHost/appsettings.json` — `Pdp:Engine` · _retrospective_
+
 ### Decision core swap
 > The pluggable decision core. Stage 2 replaces StubPolicyEngine with a real
 > rules engine reading the policy DB; Stage 5 swaps in an OPA/OpenFGA-backed

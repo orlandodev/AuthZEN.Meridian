@@ -7,6 +7,13 @@
       "runtimeArgs": ["run", "--project", "Aspire/Meridian.AppHost", "--launch-profile", "https"],
       "port": 17207,
       "url": "https://localhost:17207"
+    },
+    {
+      "name": "aspire-apphost-opa",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "Aspire/Meridian.AppHost", "--launch-profile", "https", "--", "--Pdp:Engine=opa"],
+      "port": 17207,
+      "url": "https://localhost:17207"
     }
   ]
 }

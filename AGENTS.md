@@ -57,7 +57,7 @@ The core idea: **authentication** (Duende — *who you are*) ≠ **authorization
 | **2** | Real PDP | Replace `StubPolicyEngine` with rules-engine reading `policydb` |
 | **3** | Convert APIs | Replace in-process handlers with PEP client calls to PDP |
 | **4** | Reuse | Point multiple APIs at same centralized PDP; batch `/access/v1/evaluations` |
-| **5** | Swap PDP | Drop OPA/OpenFGA-backed PDP; APIs unchanged (contract-driven) |
+| **5** | Swap PDP | Drop OPA/OpenFGA-backed PDP; APIs unchanged (contract-driven); `Pdp:Engine` in AppHost picks `homegrown` or `opa` |
 | **6** | Observability | Enable Meridian.AuthZen ActivitySource + Meter for permit/deny telemetry |
 
 See [README.md](README.md#the-stage-roadmap-course-spine) for the full vision, and

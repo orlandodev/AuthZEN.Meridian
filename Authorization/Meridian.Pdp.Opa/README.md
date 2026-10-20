@@ -69,12 +69,19 @@ the PEP or the SARC request, exactly like `BusinessHoursPolicy` today.
 
 ## Running it locally
 
-Requires Podman running (`podman machine start` if it isn't). From the
-AppHost:
+Requires Podman running (`podman machine start` if it isn't). The AppHost
+runs exactly one PDP under the `pdp` resource name, chosen by the `Pdp:Engine`
+setting in `Aspire/Meridian.AppHost/appsettings.json` (`homegrown` by
+default). Override it with the `Pdp__Engine` environment variable to put this
+host, plus the `opa` container, behind `pdp` instead:
 
 ```bash
-dotnet run --project Aspire/Meridian.AppHost
+Pdp__Engine=opa dotnet run --project Aspire/Meridian.AppHost
 ```
+
+In PowerShell, set `$env:Pdp__Engine = "opa"` first. Every PEP keeps calling
+`pdp` unchanged; only the dashboard's "Policy Decision Point (OPA)" label
+and the extra `opa` container show which engine is live.
 
 To inspect OPA directly, bypassing this translator entirely — useful when a
 decision looks wrong and you want to know whether the bug is in the `input`
