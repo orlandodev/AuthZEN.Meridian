@@ -20,6 +20,18 @@ allow if {
     department_spend_can_export
 }
 
+# Engine-neutral policy IDs (Meridian.Pdp.Core/Pdp/PolicyIds.cs), reported on
+# permit and deny alike.
+policy_id := "department_spend.read" if {
+    input.resource.type == "department_spend"
+    input.action == "read"
+}
+
+policy_id := "department_spend.export" if {
+    input.resource.type == "department_spend"
+    input.action == "export"
+}
+
 # CanRead: Finance, any department; a Manager scoped to their own department
 # only (exact match).
 department_spend_can_read if input.subject.role == "finance"

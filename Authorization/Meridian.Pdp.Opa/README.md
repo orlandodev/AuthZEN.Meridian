@@ -55,11 +55,14 @@ PEP (Expenses/Receipts/Reporting.Api)
          PDP's RuleWorkspace reads)
        - builds an `input` document: subject, resource, action, context,
          and a `facts` block (isManagerOf, amountLimit, now, businessTimeZone)
-  -> POST {opa}/v1/data/meridian/authz/allow  { "input": { ... } }
+  -> POST {opa}/v1/data/meridian/authz  { "input": { ... } }
   -> real OPA server evaluates policies/*.rego against that input
-  -> { "result": true | false }  (absent "result" is treated as false —
-       fail-closed, mirroring the homegrown engine's default-deny)
-  -> relayed back as the AccessEvaluationResponse's Decision
+  -> { "result": { "allow": true | false, "policy_id": "expense.read", ... } }
+       (absent "result" is treated as a deny; absent "policy_id" means no
+       policy matched — fail-closed, mirroring the homegrown engine's default-deny)
+  -> relayed back as the AccessEvaluationResponse's decision, with
+       policy_id as context.policy.id (the same engine-neutral IDs the
+       homegrown engine reports — see Meridian.Pdp.Core/Pdp/PolicyIds.cs)
 ```
 
 No fact that reaches Rego is trusted from the caller for anything
@@ -90,10 +93,12 @@ endpoint (its address is in the Aspire dashboard) with the same query this
 host uses:
 
 ```bash
-curl -X POST http://<opa-endpoint>/v1/data/meridian/authz/allow \
+curl -X POST http://<opa-endpoint>/v1/data/meridian/authz \
   -H "Content-Type: application/json" \
   -d '{"input": {"subject": {"id": "u-emma", "role": "employee"}, "resource": {"type": "expense", "id": "1", "properties": {"ownerId": "u-emma"}}, "action": "read"}}'
 ```
 
-A missing/absent `result` key means no rule matched (default-deny), not an
-error.
+`result.allow` is the decision (`false` by default); a missing
+`result.policy_id` means no policy matched the `(resource.type, action)` pair
+(default-deny), not an error. The result also lists the package's helper
+rules (`expense_can_read`, …), which this host ignores.

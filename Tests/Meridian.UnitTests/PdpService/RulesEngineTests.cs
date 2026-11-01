@@ -1,3 +1,4 @@
+using AuthZen.Contracts;
 using Meridian.DataAccess.Models;
 using Meridian.DataAccess.PdP;
 using Meridian.Pdp.Core.Pdp;
@@ -35,7 +36,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ExpenseCreateRequest(subjectId, ownerId: subjectId, department: department);
 
-        (await engine.EvaluateAsync(request)).Should().BeTrue();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeTrue();
     }
 
     [Fact]
@@ -49,7 +50,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ExpenseCreateRequest("u-emma", ownerId: "u-mateo", department: "Sales");
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     [Fact]
@@ -62,7 +63,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ExpenseCreateRequest("u-emma", ownerId: "u-emma", department: "Finance");
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     [Fact]
@@ -73,7 +74,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ExpenseCreateRequest("u-ghost", ownerId: "u-ghost", department: "Sales");
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     // ---- expense / read ----
@@ -86,7 +87,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ExpenseRequest("u-emma", "read", ownerId: "u-emma", status: "Draft");
 
-        (await engine.EvaluateAsync(request)).Should().BeTrue();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeTrue();
     }
 
     [Fact]
@@ -97,7 +98,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ExpenseRequest("u-finn", "read", ownerId: "u-emma", status: "Draft");
 
-        (await engine.EvaluateAsync(request)).Should().BeTrue();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeTrue();
     }
 
     [Fact]
@@ -108,7 +109,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ExpenseRequest("u-nadia", "read", ownerId: "u-emma", status: "Submitted");
 
-        (await engine.EvaluateAsync(request)).Should().BeTrue();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeTrue();
     }
 
     [Fact]
@@ -120,7 +121,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ExpenseRequest("u-nadia", "read", ownerId: "u-emma", status: "Draft");
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     [Fact]
@@ -141,7 +142,7 @@ public class RulesEngineTests
             }
         };
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     [Fact]
@@ -153,7 +154,7 @@ public class RulesEngineTests
         // u-nadia only manages u-emma and u-mateo, not u-finn.
         var request = RequestFactory.ExpenseRequest("u-nadia", "read", ownerId: "u-finn", status: "Submitted");
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     [Fact]
@@ -179,7 +180,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ExpenseRequest("u-priya", "read", ownerId: "u-emma", status: "Submitted");
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     [Fact]
@@ -190,7 +191,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ExpenseRequest("u-mateo", "read", ownerId: "u-emma", status: "Submitted");
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     // ---- expense / submit ----
@@ -203,7 +204,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ExpenseRequest("u-emma", "submit", ownerId: "u-emma", status: "Draft");
 
-        (await engine.EvaluateAsync(request)).Should().BeTrue();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeTrue();
     }
 
     [Fact]
@@ -216,7 +217,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ExpenseRequest("u-finn", "submit", ownerId: "u-emma", status: "Draft");
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     // ---- expense / approve, reject ----
@@ -231,7 +232,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ExpenseRequest("u-finn", action, ownerId: "u-emma", status: "Submitted", contextAmount: 999_999m);
 
-        (await engine.EvaluateAsync(request)).Should().BeTrue();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeTrue();
     }
 
     [Fact]
@@ -242,7 +243,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ExpenseRequest("u-nadia", "approve", ownerId: "u-emma", status: "Submitted", contextAmount: 4000m);
 
-        (await engine.EvaluateAsync(request)).Should().BeTrue();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeTrue();
     }
 
     [Fact]
@@ -253,7 +254,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ExpenseRequest("u-nadia", "approve", ownerId: "u-emma", status: "Submitted", contextAmount: 5000m);
 
-        (await engine.EvaluateAsync(request)).Should().BeTrue();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeTrue();
     }
 
     [Fact]
@@ -264,7 +265,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ExpenseRequest("u-nadia", "approve", ownerId: "u-emma", status: "Submitted", contextAmount: 5001m);
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     [Fact]
@@ -275,7 +276,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ExpenseRequest("u-nadia", "approve", ownerId: "u-finn", status: "Submitted", contextAmount: 100m);
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     [Theory]
@@ -289,7 +290,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ExpenseRequest("u-nadia", "approve", ownerId: "u-emma", status: status, contextAmount: 100m);
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     [Fact]
@@ -300,7 +301,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ExpenseRequest("u-nadia", "approve", ownerId: "u-emma", status: "Submitted", contextAmount: null);
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     [Fact]
@@ -311,7 +312,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ExpenseRequest("u-mateo", "approve", ownerId: "u-emma", status: "Submitted", contextAmount: 100m);
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     // ---- receipt / read ----
@@ -324,7 +325,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ReceiptRequest("u-emma", ownerId: "u-emma");
 
-        (await engine.EvaluateAsync(request)).Should().BeTrue();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeTrue();
     }
 
     [Fact]
@@ -335,7 +336,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ReceiptRequest("u-finn", ownerId: "u-emma");
 
-        (await engine.EvaluateAsync(request)).Should().BeTrue();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeTrue();
     }
 
     [Fact]
@@ -348,7 +349,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ReceiptRequest("u-nadia", ownerId: "u-emma");
 
-        (await engine.EvaluateAsync(request)).Should().BeTrue();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeTrue();
     }
 
     [Fact]
@@ -359,7 +360,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ReceiptRequest("u-mateo", ownerId: "u-emma");
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     [Fact]
@@ -375,7 +376,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ReceiptRequest("u-nadia", ownerId: "u-finn");
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     // ---- receipt / create ----
@@ -388,7 +389,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ReceiptCreateRequest("u-emma", ownerId: "u-emma", status: "Draft");
 
-        (await engine.EvaluateAsync(request)).Should().BeTrue();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeTrue();
     }
 
     [Fact]
@@ -401,7 +402,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ReceiptCreateRequest("u-emma", ownerId: "u-emma", status: "Submitted");
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     [Fact]
@@ -412,7 +413,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ReceiptCreateRequest("u-mateo", ownerId: "u-emma", status: "Draft");
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     [Fact]
@@ -425,7 +426,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ReceiptCreateRequest("u-finn", ownerId: "u-emma", status: "Draft");
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     [Fact]
@@ -437,7 +438,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ReceiptCreateRequest("u-nadia", ownerId: "u-emma", status: "Draft");
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     // ---- department_spend / read, export ----
@@ -450,7 +451,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.DepartmentSpendRequest("u-finn", "read", department: "Sales");
 
-        (await engine.EvaluateAsync(request)).Should().BeTrue();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeTrue();
     }
 
     [Fact]
@@ -461,7 +462,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.DepartmentSpendRequest("u-nadia", "read", department: "Sales");
 
-        (await engine.EvaluateAsync(request)).Should().BeTrue();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeTrue();
     }
 
     [Fact]
@@ -472,7 +473,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.DepartmentSpendRequest("u-nadia", "read", department: "Finance");
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     [Fact]
@@ -483,7 +484,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.DepartmentSpendRequest("u-finn", "export", department: "Sales");
 
-        (await engine.EvaluateAsync(request)).Should().BeTrue();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeTrue();
     }
 
     [Fact]
@@ -494,7 +495,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.DepartmentSpendRequest("u-finn", "export", department: "Sales");
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     [Fact]
@@ -506,7 +507,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.DepartmentSpendRequest("u-nadia", "export", department: "Sales");
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     [Fact]
@@ -520,7 +521,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.DepartmentSpendRequest("u-finn", "export", department: "Sales");
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     [Theory]
@@ -537,7 +538,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.DepartmentSpendRequest("u-finn", "export", department: "Sales");
 
-        (await engine.EvaluateAsync(request)).Should().Be(expected);
+        (await engine.EvaluateAsync(request)).Decision.Should().Be(expected);
     }
 
     [Fact]
@@ -555,6 +556,53 @@ public class RulesEngineTests
         await act.Should().ThrowAsync<InvalidOperationException>();
     }
 
+    // ---- policy IDs ----
+
+    [Theory]
+    [InlineData("expense", "create", PolicyIds.ExpenseCreate)]
+    [InlineData("expense", "read", PolicyIds.ExpenseRead)]
+    [InlineData("expense", "submit", PolicyIds.ExpenseSubmit)]
+    [InlineData("expense", "approve", PolicyIds.ExpenseDecide)]
+    [InlineData("expense", "reject", PolicyIds.ExpenseDecide)]
+    [InlineData("receipt", "read", PolicyIds.ReceiptRead)]
+    [InlineData("receipt", "create", PolicyIds.ReceiptCreate)]
+    [InlineData("department_spend", "read", PolicyIds.DepartmentSpendRead)]
+    [InlineData("department_spend", "export", PolicyIds.DepartmentSpendExport)]
+    public async Task EvaluateAsync_MatchedResourceTypeAndAction_ReportsEngineNeutralPolicyId(
+        string resourceType, string action, string expectedPolicyId)
+    {
+        using var db = PolicyDbContextTestFactory.Create();
+        var engine = new PolicyRulesEngine(db, WithinBusinessHours, BusinessZone);
+
+        var request = AnyRequest(resourceType, action);
+
+        (await engine.EvaluateAsync(request)).PolicyId.Should().Be(expectedPolicyId);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_RuleDenies_StillReportsGoverningPolicyId()
+    {
+        using var db = PolicyDbContextTestFactory.Create();
+        var engine = new PolicyRulesEngine(db);
+
+        var request = RequestFactory.ExpenseRequest("u-mateo", "read", ownerId: "u-emma", status: "Submitted");
+
+        (await engine.EvaluateAsync(request)).Should().Be(new PolicyDecision(false, PolicyIds.ExpenseRead));
+    }
+
+    [Theory]
+    [InlineData("widget", "read")]
+    [InlineData("expense", "delete")]
+    public async Task EvaluateAsync_UnmatchedResourceTypeOrAction_ReportsNoPolicyId(string resourceType, string action)
+    {
+        using var db = PolicyDbContextTestFactory.Create();
+        var engine = new PolicyRulesEngine(db);
+
+        var request = AnyRequest(resourceType, action);
+
+        (await engine.EvaluateAsync(request)).Should().Be(new PolicyDecision(false, null));
+    }
+
     // ---- default-deny ----
 
     [Fact]
@@ -568,7 +616,7 @@ public class RulesEngineTests
             Resource = new AuthZen.Contracts.Resource { Type = "widget", Id = "1" }
         };
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     [Fact]
@@ -579,7 +627,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ExpenseRequest("u-finn", "delete", ownerId: "u-emma", status: "Submitted");
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     [Fact]
@@ -590,7 +638,7 @@ public class RulesEngineTests
 
         var request = RequestFactory.ExpenseRequest("u-ghost", "read", ownerId: "u-emma", status: "Submitted");
 
-        (await engine.EvaluateAsync(request)).Should().BeFalse();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeFalse();
     }
 
     [Fact]
@@ -604,6 +652,25 @@ public class RulesEngineTests
 
         var request = RequestFactory.ExpenseRequest("u-ghost", "read", ownerId: "u-ghost", status: "Submitted");
 
-        (await engine.EvaluateAsync(request)).Should().BeTrue();
+        (await engine.EvaluateAsync(request)).Decision.Should().BeTrue();
     }
+
+    private static AccessEvaluationRequest AnyRequest(string resourceType, string action) =>
+        new()
+        {
+            Subject = new Subject { Type = "user", Id = "u-finn" },
+            Action = new AuthZenAction { Name = action },
+            Resource = new Resource
+            {
+                Type = resourceType,
+                Id = "1",
+                Properties = new Dictionary<string, object>
+                {
+                    ["ownerId"] = "u-emma",
+                    ["status"] = "Submitted",
+                    ["department"] = "Sales"
+                }
+            },
+            Context = new Dictionary<string, object> { ["amount"] = 100m }
+        };
 }

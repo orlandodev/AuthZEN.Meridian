@@ -96,6 +96,76 @@ public class PdpApiIntegrationTests(PdpApiFactory factory) : IClassFixture<PdpAp
     }
 
     [Fact]
+    public async Task Evaluation_MatchedPolicy_ReturnsPolicyIdInContext()
+    {
+        var client = CreateAuthenticatedClient();
+
+        var response = await client.PostAsJsonAsync("/access/v1/evaluation", RequestFactory.ExpenseRequest(
+            "u-nadia", "approve", ownerId: "u-emma", status: "Submitted", contextAmount: 100m));
+
+        response.EnsureSuccessStatusCode();
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("context").GetProperty("policy").GetProperty("id").GetString()
+            .Should().Be("expense.decide");
+    }
+
+    [Fact]
+    public async Task Evaluation_UnmatchedResourceType_OmitsContext()
+    {
+        var client = CreateAuthenticatedClient();
+        var request = RequestFactory.ExpenseRequest("u-finn", "read", ownerId: "u-emma", status: "Submitted") with
+        {
+            Resource = new Resource { Type = "widget", Id = "1" }
+        };
+
+        var response = await client.PostAsJsonAsync("/access/v1/evaluation", request);
+
+        response.EnsureSuccessStatusCode();
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.TryGetProperty("context", out _).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Evaluations_Boxcar_ReturnsPerItemPolicyIds()
+    {
+        var client = CreateAuthenticatedClient();
+        var batch = new AccessEvaluationsRequest
+        {
+            Subject = new Subject { Type = "user", Id = "u-finn" },
+            Evaluations =
+            [
+                new EvaluationEntry
+                {
+                    Action = new AuthZenAction { Name = "read" },
+                    Resource = new Resource
+                    {
+                        Type = "receipt",
+                        Id = "r1",
+                        Properties = new Dictionary<string, object> { ["ownerId"] = "u-emma" }
+                    }
+                },
+                new EvaluationEntry
+                {
+                    Action = new AuthZenAction { Name = "read" },
+                    Resource = new Resource
+                    {
+                        Type = "department_spend",
+                        Id = "2025-01",
+                        Properties = new Dictionary<string, object> { ["department"] = "Sales" }
+                    }
+                }
+            ]
+        };
+
+        var response = await client.PostAsJsonAsync("/access/v1/evaluations", batch);
+
+        response.EnsureSuccessStatusCode();
+        var body = await response.Content.ReadFromJsonAsync<AccessEvaluationsResponse>();
+        body!.Evaluations.Select(e => e.GetPolicyId())
+            .Should().Equal("receipt.read", "department_spend.read");
+    }
+
+    [Fact]
     public async Task Evaluations_Boxcar_EntryMissingResourceAndNoBatchDefault_ReturnsBadRequest()
     {
         var client = CreateAuthenticatedClient();

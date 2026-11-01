@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using AuthZen.Contracts;
 using Meridian.DataAccess.PdP;
 using Meridian.Pdp.Core.Pdp;
@@ -29,20 +30,25 @@ public sealed class OpaPolicyEngine(
     // ("Eastern Standard Time") — normalize once so either config form works.
     private readonly string _businessTimeZoneIanaId = ToIanaId(businessTimeZone);
 
-    public async Task<bool> EvaluateAsync(AccessEvaluationRequest request, CancellationToken ct = default)
+    // Queries the whole meridian.authz package rather than just `allow`, so a
+    // single round trip returns both the decision and the policy_id that
+    // governed it (see PolicyIds — the Rego files declare the same strings).
+    public async Task<PolicyDecision> EvaluateAsync(AccessEvaluationRequest request, CancellationToken ct = default)
     {
         var input = await BuildInputAsync(request, ct);
 
         using var response = await opaClient.PostAsJsonAsync(
-            "v1/data/meridian/authz/allow", new { input }, JsonOptions, ct);
+            "v1/data/meridian/authz", new { input }, JsonOptions, ct);
         response.EnsureSuccessStatusCode();
 
         var body = await response.Content.ReadFromJsonAsync<OpaDataResponse>(JsonOptions, ct);
 
-        // OPA omits "result" entirely when the queried rule is undefined
-        // (e.g. no policy matched) — fail-closed, mirroring PolicyRulesEngine's
-        // default-deny on an unmatched (resourceType, action) pair.
-        return body?.Result ?? false;
+        // OPA omits "result" entirely when the queried package is undefined,
+        // and omits policy_id when no policy matched the (resourceType,
+        // action) pair — fail-closed, mirroring PolicyRulesEngine's default-deny.
+        return body?.Result is { } result
+            ? new PolicyDecision(result.Allow, result.PolicyId)
+            : new PolicyDecision(false, null);
     }
 
     // Gathers every fact any policies/*.rego file might need, rather than
@@ -97,5 +103,9 @@ public sealed class OpaPolicyEngine(
 
     private sealed record OpaFacts(bool IsManagerOf, decimal AmountLimit, DateTimeOffset Now, string BusinessTimeZone);
 
-    private sealed record OpaDataResponse(bool? Result);
+    private sealed record OpaDataResponse(OpaAuthzResult? Result);
+
+    private sealed record OpaAuthzResult(
+        bool Allow,
+        [property: JsonPropertyName("policy_id")] string? PolicyId);
 }

@@ -4,6 +4,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using Meridian.DataAccess.PdP;
+using Meridian.Pdp.Core.Pdp;
 using Meridian.UnitTests.PdpService;
 using Meridian.UnitTests.TestSupport;
 using PdpOpaAssembly::Meridian.Pdp.Opa.Pdp;
@@ -18,10 +19,12 @@ public class OpaPolicyEngineTests
     private static readonly DateTimeOffset FixedNow = new(2026, 7, 23, 15, 0, 0, TimeSpan.Zero);
 
     [Theory]
-    [InlineData("""{"result":true}""", true)]
-    [InlineData("""{"result":false}""", false)]
-    [InlineData("""{}""", false)]
-    public async Task EvaluateAsync_OpaResponse_RelaysDecisionFailingClosedOnMissingResult(string opaBody, bool expected)
+    [InlineData("""{"result":{"allow":true,"policy_id":"expense.read"}}""", true, "expense.read")]
+    [InlineData("""{"result":{"allow":false,"policy_id":"expense.read"}}""", false, "expense.read")]
+    [InlineData("""{"result":{"allow":false}}""", false, null)]
+    [InlineData("""{}""", false, null)]
+    public async Task EvaluateAsync_OpaResponse_RelaysDecisionAndPolicyIdFailingClosedOnMissingResult(
+        string opaBody, bool expectedDecision, string? expectedPolicyId)
     {
         using var db = PolicyDbContextTestFactory.Create();
         var engine = CreateEngine(db, OpaReturns(opaBody), out _);
@@ -29,7 +32,7 @@ public class OpaPolicyEngineTests
         var decision = await engine.EvaluateAsync(
             RequestFactory.ExpenseRequest("u-emma", "read", ownerId: "u-emma", status: "Draft"));
 
-        decision.Should().Be(expected);
+        decision.Should().Be(new PolicyDecision(expectedDecision, expectedPolicyId));
     }
 
     [Fact]
@@ -45,21 +48,21 @@ public class OpaPolicyEngineTests
     }
 
     [Fact]
-    public async Task EvaluateAsync_AnyRequest_QueriesAllowRule()
+    public async Task EvaluateAsync_AnyRequest_QueriesAuthzPackage()
     {
         using var db = PolicyDbContextTestFactory.Create();
-        var engine = CreateEngine(db, OpaReturns("""{"result":true}"""), out var capture);
+        var engine = CreateEngine(db, OpaReturns("""{"result":{"allow":true}}"""), out var capture);
 
         await engine.EvaluateAsync(RequestFactory.ExpenseRequest("u-emma", "read", ownerId: "u-emma", status: "Draft"));
 
-        capture.RequestUri!.AbsolutePath.Should().Be("/v1/data/meridian/authz/allow");
+        capture.RequestUri!.AbsolutePath.Should().Be("/v1/data/meridian/authz");
     }
 
     [Fact]
     public async Task EvaluateAsync_ManagerOfOwner_SendsPolicyDbFactsInInput()
     {
         using var db = PolicyDbContextTestFactory.Create();
-        var engine = CreateEngine(db, OpaReturns("""{"result":true}"""), out var capture);
+        var engine = CreateEngine(db, OpaReturns("""{"result":{"allow":true}}"""), out var capture);
 
         await engine.EvaluateAsync(
             RequestFactory.ExpenseRequest("u-nadia", "approve", ownerId: "u-emma", status: "Submitted", contextAmount: 1200m));
@@ -80,7 +83,7 @@ public class OpaPolicyEngineTests
     public async Task EvaluateAsync_UnknownSubject_SendsNullRoleAndNoManagerOf()
     {
         using var db = PolicyDbContextTestFactory.Create();
-        var engine = CreateEngine(db, OpaReturns("""{"result":false}"""), out var capture);
+        var engine = CreateEngine(db, OpaReturns("""{"result":{"allow":false}}"""), out var capture);
 
         await engine.EvaluateAsync(RequestFactory.ExpenseRequest("u-nobody", "read", ownerId: "u-emma", status: "Submitted"));
 
@@ -92,7 +95,7 @@ public class OpaPolicyEngineTests
     public async Task EvaluateAsync_AnyRequest_SendsHostClockNotCallerTime()
     {
         using var db = PolicyDbContextTestFactory.Create();
-        var engine = CreateEngine(db, OpaReturns("""{"result":true}"""), out var capture);
+        var engine = CreateEngine(db, OpaReturns("""{"result":{"allow":true}}"""), out var capture);
 
         await engine.EvaluateAsync(RequestFactory.DepartmentSpendRequest("u-finn", "export", "Sales"));
 
@@ -106,7 +109,7 @@ public class OpaPolicyEngineTests
     {
         using var db = PolicyDbContextTestFactory.Create();
         var zone = TimeZoneInfo.FindSystemTimeZoneById(configuredZoneId);
-        var engine = CreateEngine(db, OpaReturns("""{"result":true}"""), out var capture, zone);
+        var engine = CreateEngine(db, OpaReturns("""{"result":{"allow":true}}"""), out var capture, zone);
 
         await engine.EvaluateAsync(RequestFactory.DepartmentSpendRequest("u-finn", "export", "Sales"));
 

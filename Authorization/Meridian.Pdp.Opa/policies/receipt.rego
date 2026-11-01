@@ -16,6 +16,18 @@ allow if {
     receipt_can_create
 }
 
+# Engine-neutral policy IDs (Meridian.Pdp.Core/Pdp/PolicyIds.cs), reported on
+# permit and deny alike.
+policy_id := "receipt.read" if {
+    input.resource.type == "receipt"
+    input.action == "read"
+}
+
+policy_id := "receipt.create" if {
+    input.resource.type == "receipt"
+    input.action == "create"
+}
+
 # CanRead: owner always; Finance always; a Manager of the owner (no status
 # gate at all here, unlike expense read).
 receipt_can_read if is_owner

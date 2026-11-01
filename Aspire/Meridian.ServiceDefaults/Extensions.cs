@@ -79,14 +79,19 @@ public static class Extensions
                 metrics.AddAspNetCoreInstrumentation()
                        .AddHttpClientInstrumentation()
                        .AddRuntimeInstrumentation();
-                // Meridian custom authorization metrics live here in later stages:
+                // Meridian authorization metrics, emitted by the PDP:
+                // authz.decisions (counter) and authz.decision.duration
+                // (histogram, ms) — both tagged with decision, action,
+                // resource.type, and policy.id.
                 metrics.AddMeter("Meridian.AuthZen");
             })
             .WithTracing(tracing =>
             {
                 tracing.AddAspNetCoreInstrumentation()
                        .AddHttpClientInstrumentation();
-                // Meridian custom authorization spans (permit/deny) attach to this source:
+                // Meridian authorization spans: authz.evaluate / authz.evaluate.batch
+                // (PEP client) and authz.decide (PDP), tagged with the decision
+                // and authz.policy.id:
                 tracing.AddSource("Meridian.AuthZen");
             });
 
