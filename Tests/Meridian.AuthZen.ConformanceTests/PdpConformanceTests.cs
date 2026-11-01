@@ -13,8 +13,9 @@ namespace Meridian.AuthZen.ConformanceTests;
 // Runs every ConformanceCases request through both IPolicyEngine
 // implementations — the homegrown PolicyRulesEngine and OpaPolicyEngine
 // backed by a real OPA server — over the same policydb facts and host clock.
-// Both must return the same, expected decision: the AuthZEN contract makes
-// the PDPs interchangeable only if their decisions are.
+// Both must return the same, expected decision and the same engine-neutral
+// policy ID: the AuthZEN contract makes the PDPs interchangeable only if
+// their decisions — and the telemetry PEPs record from them — are.
 public sealed class PdpConformanceTests(OpaContainerFixture opa) : IClassFixture<OpaContainerFixture>
 {
     private static readonly TimeZoneInfo BusinessZone =
@@ -38,7 +39,8 @@ public sealed class PdpConformanceTests(OpaContainerFixture opa) : IClassFixture
             Homegrown: await homegrown.EvaluateAsync(request),
             Opa: await opaBacked.EvaluateAsync(request));
 
-        decisions.Should().Be((testCase.Expected, testCase.Expected));
+        decisions.Opa.Should().Be(decisions.Homegrown);
+        decisions.Homegrown.Decision.Should().Be(testCase.Expected);
     }
 
     // A PDP host deserializes properties/context into JsonElement values, not

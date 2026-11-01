@@ -610,6 +610,52 @@ and [AGENTS.md](AGENTS.md), the `Meridian.AuthZen` `ActivitySource` + `Meter`
 are already wired in `ServiceDefaults` and `AuthZenPolicyDecisionClient`; this
 stage lights up a live permit/deny view over them.
 
+### Story 6.1 — `policy.id` contract change + latency histogram
+
+Every PDP response now names the policy that governed the decision, as
+`"context": { "policy": { "id": "expense.read" } }`. The ID is engine-neutral
+(`PolicyIds`: `expense.create`, `expense.read`, `expense.submit`,
+`expense.decide`, `receipt.read`, `receipt.create`, `department_spend.read`,
+`department_spend.export`), not a C# rule method or a Rego rule name. approve
+and reject share `expense.decide` because they share one rule. The ID is
+reported on deny as well as permit, and omitted only on a default deny for an
+unmatched `(resource.type, action)` pair. `IPolicyEngine.EvaluateAsync` now
+returns a `PolicyDecision(Decision, PolicyId)` instead of a bare `bool`.
+`PolicyRulesEngine.Rules` pairs each rule with its ID. In
+`Meridian.Pdp.Opa/policies/*.rego` each file declares a matching `policy_id`
+rule, and `OpaPolicyEngine.EvaluateAsync` queries the whole `meridian.authz`
+package to read `allow` and `policy_id` in one round trip. The conformance
+suite asserts that both engines return the same ID as well as the same
+decision, so the Stage 5 swap stays invisible to the PEP.
+`AuthZen.Contracts.PolicyContext` owns the wire shape: `AuthZenEndpoints`
+writes it and the PEP reads it.
+
+The `authz.decide` span and `authz.decisions` counter moved out of
+`PolicyRulesEngine` into a new `InstrumentedPolicyEngine` decorator, which both
+PDP hosts wrap around their engine. As a result the OPA-backed PDP now emits
+decision telemetry too; before, it emitted none. The counter keeps its
+`decision`/`action`/`resource.type` tags and gains `policy.id`. The span gains
+`authz.policy.id`. A new `authz.decision.duration` histogram (unit `ms`, same
+tags) records engine latency. Its explicit bucket boundaries (1–250 ms,
+concentrated under 50 ms) are set via `InstrumentAdvice` on the instrument
+itself, so no ServiceDefaults view is needed. The counter stays PDP-side: the
+PDP is the single source of truth for decisions. On the PEP side,
+`AuthZenPolicyDecisionClient.IsAllowedAsync` tags its `authz.evaluate` span
+with `authz.policy.id`. `IPolicyDecisionClient` still returns only booleans,
+so the ID never leaves telemetry or reaches an end user. No new
+Meter/ActivitySource names were introduced: everything still uses
+`Meridian.AuthZen`, already registered in `Extensions.ConfigureOpenTelemetry`,
+whose comments now list the instruments.
+
+`Authorization/AuthZen.Contracts/PolicyContext.cs` — `PolicyContext` ·
+`Authorization/Meridian.Pdp.Core/Pdp/PolicyDecision.cs`, `PolicyIds.cs`,
+`InstrumentedPolicyEngine.cs` · `Authorization/Meridian.Pdp.Core/Pdp/PolicyRulesEngine.cs` — `Rules`, `EvaluateAsync` ·
+`Authorization/Meridian.Pdp.Core/Endpoints/AuthZenEndpoints.cs` — `ToResponse` ·
+`Authorization/Meridian.Pdp.Opa/Pdp/OpaPolicyEngine.cs` — `EvaluateAsync` ·
+`Authorization/Meridian.Pdp.Opa/policies/*.rego` — `policy_id` ·
+`Authorization/AuthZen.Pep/AuthZenPolicyDecisionClient.cs` — `IsAllowedAsync` ·
+`Authorization/Meridian.Pdp.Service/Program.cs`, `Authorization/Meridian.Pdp.Opa/Program.cs` — `IPolicyEngine` registration · _retrospective_
+
 ---
 
 ## Maintaining this file

@@ -31,7 +31,7 @@ public static class AuthZenEndpoints
         // Single decision.
         app.MapPost("/access/v1/evaluation",
             async (AccessEvaluationRequest request, IPolicyEngine engine, CancellationToken ct) =>
-                Results.Ok(new AccessEvaluationResponse { Decision = await engine.EvaluateAsync(request, ct) }))
+                Results.Ok(ToResponse(await engine.EvaluateAsync(request, ct))))
             .RequireAuthorization()
             .WithTags("AuthZEN")
             .WithSummary("Evaluate a single access request")
@@ -60,8 +60,7 @@ public static class AuthZenEndpoints
                 var results = new List<AccessEvaluationResponse>(merged.Count);
                 foreach (var evaluation in merged)
                 {
-                    var decision = await engine.EvaluateAsync(evaluation, ct);
-                    results.Add(new AccessEvaluationResponse { Decision = decision });
+                    results.Add(ToResponse(await engine.EvaluateAsync(evaluation, ct)));
                 }
 
                 return Results.Ok(new AccessEvaluationsResponse { Evaluations = results });
@@ -72,6 +71,12 @@ public static class AuthZenEndpoints
             .WithDescription("Accepts multiple SARC entries that may share top-level Subject/Action/" +
                 "Resource/Context defaults, and returns one permit/deny decision per entry, in order.");
     }
+
+    private static AccessEvaluationResponse ToResponse(PolicyDecision decision) => new()
+    {
+        Decision = decision.Decision,
+        Context = PolicyContext.Create(decision.PolicyId)
+    };
 
     // AuthZEN boxcar semantics: a top-level subject/action/resource/context
     // on the batch request is a default that each evaluations[] entry

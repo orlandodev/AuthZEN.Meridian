@@ -28,6 +28,28 @@ allow if {
     expense_can_decide
 }
 
+# Engine-neutral policy IDs (Meridian.Pdp.Core/Pdp/PolicyIds.cs), reported on
+# permit and deny alike. approve and reject share one policy.
+policy_id := "expense.create" if {
+    input.resource.type == "expense"
+    input.action == "create"
+}
+
+policy_id := "expense.read" if {
+    input.resource.type == "expense"
+    input.action == "read"
+}
+
+policy_id := "expense.submit" if {
+    input.resource.type == "expense"
+    input.action == "submit"
+}
+
+policy_id := "expense.decide" if {
+    input.resource.type == "expense"
+    input.action in {"approve", "reject"}
+}
+
 # CanCreate: owner, and the resource's department matches the subject's own
 # department (case-insensitive, like the C# OrdinalIgnoreCase comparison).
 expense_can_create if {

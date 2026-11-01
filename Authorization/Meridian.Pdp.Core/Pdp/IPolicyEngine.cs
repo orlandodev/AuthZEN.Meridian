@@ -6,5 +6,5 @@ namespace Meridian.Pdp.Core.Pdp;
 // policy DB, or an OPA/OpenFGA-backed engine — swap in behind this interface.
 public interface IPolicyEngine
 {
-    Task<bool> EvaluateAsync(AccessEvaluationRequest request, CancellationToken ct = default);
+    Task<PolicyDecision> EvaluateAsync(AccessEvaluationRequest request, CancellationToken ct = default);
 }

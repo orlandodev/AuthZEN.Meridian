@@ -32,10 +32,12 @@ builder.Services.AddSingleton(businessTimeZone);
 // The real OPA server (see AppHost.cs's "opa" container resource and this
 // project's README.md) resolved via Aspire service discovery, the same way
 // every PEP resolves "pdp" itself.
-builder.Services.AddHttpClient<IPolicyEngine, OpaPolicyEngine>(client =>
+builder.Services.AddHttpClient<OpaPolicyEngine>(client =>
 {
     client.BaseAddress = new Uri("http://opa");
 });
+builder.Services.AddScoped<IPolicyEngine>(sp =>
+    new InstrumentedPolicyEngine(sp.GetRequiredService<OpaPolicyEngine>()));
 
 // Callers here are PEPs, exactly as with the homegrown PDP — this host
 // advertises the identical pdp.evaluate-scoped client-credentials contract,

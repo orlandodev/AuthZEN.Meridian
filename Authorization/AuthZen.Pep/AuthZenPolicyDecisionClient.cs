@@ -6,12 +6,15 @@ using Microsoft.Extensions.Logging;
 namespace AuthZen.Pep;
 
 // HTTP client that speaks the AuthZEN Access Evaluation API and emits an
-// OpenTelemetry client span for the outbound call, tagged with the decision.
-// The ActivitySource name matches what ServiceDefaults subscribes to
-// ("Meridian.AuthZen"), so it correlates with the PDP's server-side span for
-// the same call. The "authz.decisions" counter is emitted only by
-// PolicyRulesEngine on the PDP side — the PDP is where a decision is actually
-// made, so it's the single source of truth for that metric
+// OpenTelemetry client span for the outbound call, tagged with the decision
+// and the engine-neutral policy ID the PDP reports in the response context.
+// The policy ID stays in telemetry: it's never returned to callers of
+// IPolicyDecisionClient, so it can't reach an end user. The ActivitySource
+// name matches what ServiceDefaults subscribes to ("Meridian.AuthZen"), so it
+// correlates with the PDP's server-side span for the same call. The
+// "authz.decisions" counter and "authz.decision.duration" histogram are
+// emitted only by the PDP's InstrumentedPolicyEngine — the PDP is where a
+// decision is actually made, so it's the single source of truth for those metrics
 public sealed class AuthZenPolicyDecisionClient : IPolicyDecisionClient
 {
     public static readonly ActivitySource ActivitySource = new("Meridian.AuthZen");
@@ -39,6 +42,7 @@ public sealed class AuthZenPolicyDecisionClient : IPolicyDecisionClient
 
         var decision = result?.Decision ?? false;
         activity?.SetTag("authz.decision", decision ? "permit" : "deny");
+        activity?.SetTag("authz.policy.id", result?.GetPolicyId());
 
         return decision;
     }
