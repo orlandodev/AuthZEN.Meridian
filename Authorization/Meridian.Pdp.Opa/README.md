@@ -70,6 +70,25 @@ security-sensitive that the homegrown engine also doesn't trust from the
 caller: `facts.now` comes from this host's own `TimeProvider`, never from
 the PEP or the SARC request, exactly like `BusinessHoursPolicy` today.
 
+## Telemetry
+
+OPA is deliberately opaque in traces. Each decision shows up in the Aspire
+dashboard as `authz.decide` (from `InstrumentedPolicyEngine`, identical to the
+homegrown PDP's), with these children:
+
+- the policydb queries `RuleWorkspace` issues, as `Npgsql` spans (the Aspire
+  `AddNpgsqlDbContext` integration enables them by default)
+- one HttpClient `POST` to `opa` for `v1/data/meridian/authz`, which is a leaf
+  span
+
+The OPA container has no tracing configured and runs with `--log-level error`,
+so nothing from inside Rego evaluation appears. That's the point of the
+contract: the engine is a black box behind `IPolicyEngine`, and the decision,
+`policy.id`, latency, and errors are all recorded by this host, not by OPA. If
+you ever want OPA's own spans, OPA supports OpenTelemetry export through its
+`distributed_tracing` configuration (an OTLP endpoint plus a service name),
+but nothing in Meridian depends on it.
+
 ## Running it locally
 
 Requires Podman running (`podman machine start` if it isn't). The AppHost

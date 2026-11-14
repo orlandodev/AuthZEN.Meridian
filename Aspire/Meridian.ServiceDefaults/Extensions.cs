@@ -79,10 +79,13 @@ public static class Extensions
                 metrics.AddAspNetCoreInstrumentation()
                        .AddHttpClientInstrumentation()
                        .AddRuntimeInstrumentation();
-                // Meridian authorization metrics, emitted by the PDP:
+                // Meridian authorization metrics. Emitted by the PDP:
                 // authz.decisions (counter) and authz.decision.duration
-                // (histogram, ms) — both tagged with decision, action,
-                // resource.type, and policy.id.
+                // (histogram, ms) — both tagged with decision
+                // (permit/deny/error), action, resource.type, policy.id, and
+                // error.type on errors. Emitted by the PEP: authz.pep.errors
+                // (counter) for calls that never got a PDP decision — tagged
+                // with error.type, operation, action, and resource.type.
                 metrics.AddMeter("Meridian.AuthZen");
             })
             .WithTracing(tracing =>
@@ -90,8 +93,9 @@ public static class Extensions
                 tracing.AddAspNetCoreInstrumentation()
                        .AddHttpClientInstrumentation();
                 // Meridian authorization spans: authz.evaluate / authz.evaluate.batch
-                // (PEP client) and authz.decide (PDP), tagged with the decision
-                // and authz.policy.id:
+                // (PEP client; the batch span carries one authz.decision event
+                // per item) and authz.decide (PDP), tagged with the decision
+                // and authz.policy.id; marked Error only on failure, never on deny:
                 tracing.AddSource("Meridian.AuthZen");
             });
 

@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using AuthZen.Contracts;
+using Meridian.UnitTests.TestSupport;
 
 namespace Meridian.UnitTests.PdpService;
 
@@ -180,6 +182,40 @@ public class PdpApiIntegrationTests(PdpApiFactory factory) : IClassFixture<PdpAp
         var response = await client.PostAsJsonAsync("/access/v1/evaluations", batch);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    // Subject IDs are never metric tags, so measurements are matched to this
+    // test through the authz.decide span they're recorded under; the span
+    // recorder's listener is what makes the PDP create that span at all.
+    [Fact]
+    public async Task Evaluations_Boxcar_RecordsOneDecisionMeasurementPerItem()
+    {
+        var client = CreateAuthenticatedClient();
+        var subjectId = $"u-test-{Guid.NewGuid():N}";
+        using var spans = new AuthZenSpanRecorder("authz.decide", "authz.subject.id", subjectId);
+        using var decisions = new AuthZenMeasurementRecorder("authz.decisions",
+            _ => Equals(Activity.Current?.GetTagItem("authz.subject.id"), subjectId));
+        var batch = new AccessEvaluationsRequest
+        {
+            Subject = new Subject { Type = "user", Id = subjectId },
+            Action = new AuthZenAction { Name = "read" },
+            Evaluations = Enumerable.Range(1, 3)
+                .Select(i => new EvaluationEntry
+                {
+                    Resource = new Resource
+                    {
+                        Type = "expense",
+                        Id = $"expense-{i}",
+                        Properties = new Dictionary<string, object> { ["ownerId"] = "u-emma", ["status"] = "Submitted" }
+                    }
+                })
+                .ToList()
+        };
+
+        var response = await client.PostAsJsonAsync("/access/v1/evaluations", batch);
+
+        response.EnsureSuccessStatusCode();
+        decisions.Measurements.Should().HaveCount(3);
     }
 
     [Fact]

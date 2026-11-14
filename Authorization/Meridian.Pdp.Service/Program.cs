@@ -24,10 +24,12 @@ if (string.IsNullOrWhiteSpace(timeZoneId))
 
 var businessTimeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
 
-builder.Services.AddScoped<IPolicyEngine>(sp => new InstrumentedPolicyEngine(new PolicyRulesEngine(
-    sp.GetRequiredService<PolicyDbContext>(),
-    sp.GetService<TimeProvider>(),
-    businessTimeZone)));
+builder.Services.AddScoped<IPolicyEngine>(sp => new InstrumentedPolicyEngine(
+    new PolicyRulesEngine(
+        sp.GetRequiredService<PolicyDbContext>(),
+        sp.GetService<TimeProvider>(),
+        businessTimeZone),
+    sp.GetRequiredService<ILogger<InstrumentedPolicyEngine>>()));
 
 // Callers here are PEPs (the Expenses/Receipts/Reporting APIs), not end
 // users — they authenticate as themselves via client credentials (see the
