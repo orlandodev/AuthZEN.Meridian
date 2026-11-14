@@ -656,6 +656,109 @@ whose comments now list the instruments.
 `Authorization/AuthZen.Pep/AuthZenPolicyDecisionClient.cs` — `IsAllowedAsync` ·
 `Authorization/Meridian.Pdp.Service/Program.cs`, `Authorization/Meridian.Pdp.Opa/Program.cs` — `IPolicyEngine` registration · _retrospective_
 
+### Story 6.1b — Batch, errors and PDP-side telemetry
+
+**Batch path.** `AuthZenPolicyDecisionClient.AreAllowedAsync` now adds one
+`authz.decision` event per item to its `authz.evaluate.batch` span. Each event
+carries `authz.subject.id`, `authz.action`, `authz.resource.type`,
+`authz.resource.id`, `authz.decision`, and `authz.policy.id`, resolved against
+the batch defaults the same way the PDP's `TryMergeWithDefaults` does. The span
+also gains `authz.batch.permits` / `authz.batch.denies`. Per-item subject and
+resource IDs live only on spans and logs, never on metric tags, to keep
+cardinality down. Unit tests assert the exact tag-key sets of `authz.decisions`
+and `authz.pep.errors` to guard this. The PDP side already recorded one
+measurement per batch item, because the `/access/v1/evaluations` endpoint calls
+the engine once per entry. A new test locks that in. If the PDP returns a
+different number of decisions than were requested, the client now throws
+instead of silently returning `[]`. Before, a short response either threw
+`IndexOutOfRangeException` in the visibility filters or quietly dropped items.
+
+`Authorization/AuthZen.Pep/AuthZenPolicyDecisionClient.cs` — `AreAllowedAsync`, `RecordBatchDecisions` ·
+`Tests/Meridian.UnitTests/PdpService/PdpApiIntegrationTests.cs` — `Evaluations_Boxcar_RecordsOneDecisionMeasurementPerItem`
+
+**Error outcome, split by side.** The PDP can't count a call that never reached
+it, so errors are recorded where they can be seen:
+
+- *PDP:* when the wrapped engine throws (OPA unreachable, policydb down),
+  `InstrumentedPolicyEngine` records `decision=error` plus `error.type` (the
+  exception type) on `authz.decisions` and `authz.decision.duration`, leaves
+  `policy.id` unset, marks the `authz.decide` span `Error` with the exception,
+  and rethrows.
+- *PEP:* a new `authz.pep.errors` counter, owned by
+  `AuthZenPolicyDecisionClient`, counts calls that never got a PDP decision. It
+  is tagged with `error.type`, `operation` (`evaluate` / `evaluate.batch`),
+  `action`, and `resource.type` (`mixed` for heterogeneous batches).
+  `error.type` follows the OpenTelemetry convention: the HTTP status code for a
+  non-success response, `pdp_unreachable` for a transport failure, `timeout`,
+  or otherwise the exception type. The client span is marked `Error` with the
+  same `error.type`.
+
+A deny is not an error: it leaves the span status `Unset` on both sides. A
+cancellation by the caller counts nothing.
+
+Token failures land in the same place. With Duende.AccessTokenManagement 4.2, a
+failed client-credentials token request doesn't throw. The evaluation is sent
+without a bearer token, the PDP answers 401, and the call is counted as
+`authz.pep.errors{error.type="401"}`. `PepTokenFailureTests` drives the real
+`AddAuthZenPep` registration to pin this down.
+
+`Authorization/Meridian.Pdp.Core/Pdp/InstrumentedPolicyEngine.cs` — `EvaluateAsync`, `RecordMeasurements` ·
+`Authorization/AuthZen.Pep/AuthZenPolicyDecisionClient.cs` — `Errors`, `ClassifyError`, `RecordFailure` ·
+`Aspire/Meridian.ServiceDefaults/Extensions.cs` — `ConfigureOpenTelemetry` (instrument list comments) ·
+`Tests/Meridian.UnitTests/AuthZenPep/PepTokenFailureTests.cs`
+
+**Fail-closed confirmed as deliberate.** Any PEP failure is rethrown, never
+turned into a permit. The handler or filter doesn't catch it, so the request
+ends in `GlobalExceptionHandler` as a generic 500. The HTTP contract is
+unchanged; this story keeps the 500 rather than mapping it to a 503. The
+standard resilience handler from `ConfigureHttpClientDefaults` retries the
+evaluation POST on transient failures (5xx, 408, 429, connection errors), which
+is safe because evaluation is idempotent. A 5xx outage therefore surfaces after
+the retries are exhausted, while a 401 or 403 fails at once.
+`PepFailClosedTests` proves the end-to-end behavior: when the PDP rejects the
+PEP's token, `GET /expenses/{id}` returns 500 and one `authz.pep.errors`
+measurement is recorded.
+
+`Authorization/AuthZen.Pep/AuthZenPolicyDecisionClient.cs` — type comment ·
+`Tests/Meridian.IntegrationTests/PepFailClosedTests.cs`
+
+**PDP-side span and structured decision log.** `authz.decide` changes from
+`ActivityKind.Server` to `Internal`. The ASP.NET Core request span is already
+the server span for the inbound call, and `authz.decide` sits beneath it, once
+per item on the batch endpoint, with the same attribute set as the PEP's
+`authz.evaluate`. `InstrumentedPolicyEngine` now takes an
+`ILogger<InstrumentedPolicyEngine>` and writes one source-generated log line
+per decision: `Information`, with `Decision`, `SubjectId`, `Action`,
+`ResourceType`, `ResourceId`, `PolicyId`. On an engine failure it writes a
+`Warning` with the exception instead. The line is written inside the
+`authz.decide` activity, so OpenTelemetry logging stamps it with that span's
+TraceId/SpanId. In the Aspire dashboard, filtering structured logs by trace
+shows every decision a request made. Both PDP hosts' `IPolicyEngine` factories
+pass the logger.
+
+`Authorization/Meridian.Pdp.Core/Pdp/InstrumentedPolicyEngine.cs` — `LogDecision`, `LogDecisionFailed` ·
+`Authorization/Meridian.Pdp.Service/Program.cs`, `Authorization/Meridian.Pdp.Opa/Program.cs` — `IPolicyEngine` registration
+
+**OPA opaque, policydb spans present.** As configured (not yet confirmed in a
+live dashboard run), in the OPA-backed PDP a decision's trace is `authz.decide` → policydb `Npgsql` spans → one HttpClient `POST` to
+`opa` as a leaf. No OPA-internal spans appear: the container has no tracing
+configured and runs with `--log-level error`. That's intentional, since the
+engine is a black box behind `IPolicyEngine`. The `Npgsql` spans come from the
+Aspire `AddNpgsqlDbContext` integration, which enables tracing by default and
+isn't disabled anywhere in configuration. Documented in the project README's
+new "Telemetry" section.
+
+`Authorization/Meridian.Pdp.Opa/README.md` — Telemetry
+
+**Test support.** `AuthZenSpanRecorder`, `AuthZenMeasurementRecorder`, and
+`CapturingLogger<T>` were extracted into `Tests/Meridian.UnitTests/TestSupport/`
+and are shared by the PEP and PDP instrumentation tests. Each filters on a
+test-unique value because the suite emits on the same process-wide
+`Meridian.AuthZen` source and meter in parallel. The measurement recorder can
+also filter on `Activity.Current`, since meter callbacks run synchronously
+under the span the measurement was recorded in. That lets a test match
+measurements by subject ID without making it a tag.
+
 ---
 
 ## Maintaining this file

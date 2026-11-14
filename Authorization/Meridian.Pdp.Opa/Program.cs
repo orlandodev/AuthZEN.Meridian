@@ -37,7 +37,9 @@ builder.Services.AddHttpClient<OpaPolicyEngine>(client =>
     client.BaseAddress = new Uri("http://opa");
 });
 builder.Services.AddScoped<IPolicyEngine>(sp =>
-    new InstrumentedPolicyEngine(sp.GetRequiredService<OpaPolicyEngine>()));
+    new InstrumentedPolicyEngine(
+        sp.GetRequiredService<OpaPolicyEngine>(),
+        sp.GetRequiredService<ILogger<InstrumentedPolicyEngine>>()));
 
 // Callers here are PEPs, exactly as with the homegrown PDP — this host
 // advertises the identical pdp.evaluate-scoped client-credentials contract,
